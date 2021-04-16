@@ -1,3 +1,0 @@
-/home/spl211/CLionProjects/splHW1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/spl211/CLionProjects/splHW1/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/spl211/CLionProjects/splHW1/cmake-build-debug/CMakeFiles/splHW1.dir
