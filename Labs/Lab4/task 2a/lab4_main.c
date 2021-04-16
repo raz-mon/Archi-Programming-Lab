@@ -25,7 +25,6 @@ typedef struct ent{
 }ent;
 
 int system_call();
-void LowToCap(int path, int buffer);
 
 int main (int argc , char* argv[], char* envp[]){
   int fd, nread, curr;
