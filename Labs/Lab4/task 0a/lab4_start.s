@@ -5,7 +5,7 @@ extern main
 _start:
     pop    dword ecx    ; ecx = argc
     mov    esi,esp      ; esi = argv
-    ;; lea eax, [esi+4*ecx+4] ; eax = envp = (4*ecx)+esi+4
+    ;;lea eax, [esi+4*ecx+4] ; eax = envp = (4*ecx)+esi+4
     mov     eax,ecx     ; put the number of arguments into eax
     shl     eax,2       ; compute the size of argv in bytes
     add     eax,esi     ; add the size to the address of argv 
