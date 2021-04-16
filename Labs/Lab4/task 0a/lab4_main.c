@@ -21,5 +21,6 @@ int main (int argc , char* argv[], char* envp[])
       system_call(SYS_WRITE,STDOUT,argv[i],strlen(argv[i]));
       system_call(SYS_WRITE,STDOUT,"\n",1);
     }
+    system_call(SYS_WRITE,STDOUT,"Hello World\n",12);
   return 0;
 }
