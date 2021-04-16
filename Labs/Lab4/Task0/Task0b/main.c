@@ -12,8 +12,7 @@ int main (int argc , char* argv[], char* envp[])
     system_call(1, 0x55, 0, 0);
   }
   system_call(19, fd, 0x291, 0);
-  system_call(4, fd, "Mira", 4);
-  system_call(4, fd, "", 0x0A);
+  system_call(4, fd, "Mira. ", 6);
 
   return 0;
   /*
