@@ -17,6 +17,16 @@
 #define O_RDONLY 0
 #define O_WRONLY 1
 
+#define DT_UNKNOWN 0
+#define DT_FIFO 1
+#define DT_CHR 2
+#define DT_DIR 4
+#define DT_BLK 6
+#define DT_REG 8
+#define DT_LNK 10
+#define DT_SOCK 12
+#define DT_WHT 14
+
 typedef struct ent{
   int inode;
   int offset;
@@ -24,6 +34,8 @@ typedef struct ent{
   char buf[];
 }ent;
 
+
+void printDtype(char d_type);
 int system_call();
 
 int main (int argc , char* argv[], char* envp[]){
@@ -51,6 +63,7 @@ int main (int argc , char* argv[], char* envp[]){
       if(strncmp(&c,d->buf,1) == 0){
         system_call(SYS_WRITE,STDOUT,d->buf,strlen(d->buf));
         system_call(SYS_WRITE,STDOUT,":  ",2);
+        printDtype(d_type);
         system_call(SYS_WRITE,STDOUT,itoa(d_type),10);
         system_call(SYS_WRITE,STDOUT,"\n",1);
       }
@@ -62,6 +75,7 @@ int main (int argc , char* argv[], char* envp[]){
       d_type = *(buf + curr + d->len -1);
       system_call(SYS_WRITE,STDOUT,d->buf,strlen(d->buf));
       system_call(SYS_WRITE,STDOUT,":  ",2);
+      printDtype(d_type);
       system_call(SYS_WRITE,STDOUT,itoa(d_type),10);
       system_call(SYS_WRITE,STDOUT,"\n",1);
       curr += d->len;
@@ -70,7 +84,7 @@ int main (int argc , char* argv[], char* envp[]){
   return 0;
 }
 
-/*
+
 void printDtype(char d_type){
   (d_type == DT_REG) ?  system_call(SYS_WRITE,STDOUT,"regular\n",9) :
   (d_type == DT_DIR) ?  system_call(SYS_WRITE,STDOUT,"directory\n",11) :
@@ -81,4 +95,3 @@ void printDtype(char d_type){
   (d_type == DT_CHR) ?  system_call(SYS_WRITE,STDOUT,"char dev\n",10) :
    system_call(SYS_WRITE,STDOUT,"???\n",4);
 }
-*/

@@ -1,9 +1,12 @@
 #include "lab4_util.h"
 
 #define SYS_EXIT 1
+#define SYS_READ 3
 #define SYS_WRITE 4
 #define SYS_OPEN 5
 #define SYS_LSEEK 19
+
+#define STDIN 0
 #define STDOUT 1
 
 int system_call();
@@ -26,8 +29,21 @@ int main (int argc , char* argv[], char* envp[])
       system_call(SYS_WRITE,STDOUT,"\n",1);
     }
     system_call(SYS_WRITE,STDOUT,"Hello World\n",12);
+   int file = system_call(SYS_OPEN,STDIN,0,0777);
     */
+   while (1){
+     char c[1];
+     system_call(SYS_READ,STDIN,c,1);
+      if (*c >= 65 && *c <= 90){
+          *c += 32;
+      }else if(*c == 0){
+        system_call(SYS_EXIT,0,0,0);
+      }
+      system_call(SYS_WRITE,STDOUT,c,1);
+    }
+   
 
+   /*
     int file = system_call(SYS_OPEN,"greeting",2,0777);
     if(file < 0){
       system_call(SYS_EXIT,0x55,0,0);
@@ -36,10 +52,12 @@ int main (int argc , char* argv[], char* envp[])
     if(lseek < 0){
       system_call(SYS_EXIT,0x55,0,0);
     }
-    int fwrite = system_call(SYS_WRITE,file,"Mira. ",6);
+    int fwrite = system_call(SYS_WRITE,file,"Mira.",5);
+    system_call(SYS_WRITE,file," ",1);
     if(fwrite < 0){
       system_call(SYS_EXIT,0x55,0,0);
     }
+    */
 
   return 0;
 }
