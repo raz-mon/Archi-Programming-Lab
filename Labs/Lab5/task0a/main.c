@@ -5,13 +5,13 @@
 #include <unistd.h>
 
 int main(int argc, char* argv[]){
-    /*
+    
     // Print the current directory
     char path[PATH_MAX];
     getcwd(path, PATH_MAX);
     printf("%s", path);
-    printf("\n");
-    */
+    printf("\n\n");
+    
 
     //Read a line from from the user
     char line[2048];
@@ -19,8 +19,8 @@ int main(int argc, char* argv[]){
 
     //parseCmdLines
     cmdLine* pCmdLine = parseCmdLines(line);
-    printf("arguments: %s\n", pCmdLine->);
-    //execute(pCmdLine);
+    //printf("arguments: %s\n", pCmdLine->arguments[0]);
+    execute(pCmdLine);
 }
 
 
