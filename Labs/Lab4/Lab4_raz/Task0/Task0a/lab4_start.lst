@@ -1,0 +1,41 @@
+     1                                  section .text
+     2                                      global _start
+     3                                      global system_call
+     4                                      extern main
+     5                                  
+     6                                  _start:
+     7 00000000 59                          pop    dword ecx    ; ecx = argc
+     8 00000001 89E6                        mov    esi,esp      ; esi = argv
+     9                                      ;; lea eax, [esi+4*ecx+4] ; eax = envp = (4*ecx)+esi+4
+    10 00000003 89C8                        mov     eax,ecx     ; put the number of arguments into eax
+    11 00000005 C1E002                      shl     eax,2       ; compute the size of argv in bytes
+    12 00000008 01F0                        add     eax,esi     ; add the size to the address of argv 
+    13 0000000A 83C004                      add     eax,4       ; skip NULL at the end of argv
+    14 0000000D 50                          push    dword eax   ; char *envp[]
+    15 0000000E 56                          push    dword esi   ; char* argv[]
+    16 0000000F 51                          push    dword ecx   ; int argc
+    17                                  
+    18 00000010 E8(00000000)                call    main        ; int main( int argc, char *argv[], char *envp[] )
+    19                                  
+    20 00000015 89C3                        mov     ebx,eax
+    21 00000017 B801000000                  mov     eax,1
+    22 0000001C CD80                        int     0x80
+    23 0000001E 90                          nop
+    24                                          
+    25                                  system_call:
+    26 0000001F 55                          push    ebp             ; Save caller state
+    27 00000020 89E5                        mov     ebp, esp
+    28 00000022 83EC04                      sub     esp, 4          ; Leave space for local var on stack
+    29 00000025 60                          pushad                  ; Save some more caller state
+    30                                  
+    31 00000026 8B4508                      mov     eax, [ebp+8]    ; Copy function args to registers: leftmost...        
+    32 00000029 8B5D0C                      mov     ebx, [ebp+12]   ; Next argument...
+    33 0000002C 8B4D10                      mov     ecx, [ebp+16]   ; Next argument...
+    34 0000002F 8B5514                      mov     edx, [ebp+20]   ; Next argument...
+    35 00000032 CD80                        int     0x80            ; Transfer control to operating system
+    36 00000034 8945FC                      mov     [ebp-4], eax    ; Save returned value...
+    37 00000037 61                          popad                   ; Restore caller state (registers)
+    38 00000038 8B45FC                      mov     eax, [ebp-4]    ; place returned value where caller can see it
+    39 0000003B 83C404                      add     esp, 4          ; Restore caller state
+    40 0000003E 5D                          pop     ebp             ; Restore caller state
+    41 0000003F C3                          ret                     ; Back to caller
