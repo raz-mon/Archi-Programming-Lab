@@ -15,7 +15,7 @@ typedef struct ent {
     
 int main(int argc, char* argv[], char* envp[]){
 
-    system_call(4, 1, "flame strike yet again!\n", 25);
+    system_call(4, 1, "flame strikes yet again!\n", 25);
     
     char buff[10000];
     int fd;

@@ -36,6 +36,20 @@ void print_names(char* buff, int fd, ent* entp, int count){
         }
 }
 
+void print_dtype(char dtype){
+    char* str = dtype == 0 ? "DT_UNKNOWN" : 
+    dtype == 1 ? "FIFO" :
+    dtype == 2 ? "DT_CHR" :
+    dtype == 4 ? "DIR" :
+    dtype == 6 ? "DT_BLK" :
+    dtype == 8 ? "DT_REG" :
+    dtype == 10 ? "DT_LNK" :
+    dtype == 12 ? "DT_SOCK" :
+    dtype == 14 ? "DT_WHT" :
+    "???";
+    system_call(4, 1, str, strlen(str));
+}
+
 void print_by_prefix(char prefix, char* buff, int fd, ent* entp, int count){
 
     system_call(4, 1, "prefix is: ", 12);
@@ -83,18 +97,6 @@ void print_by_prefix(char prefix, char* buff, int fd, ent* entp, int count){
     
 }
 
-void print_dtype(char dtype){
-    char* str = dtype == 0 ? "DT_UNKNOWN" : 
-    dtype == 1 ? "FIFO" :
-    dtype == 2 ? "DT_CHR" :
-    dtype == 4 ? "DIR" :
-    dtype == 6 ? "DT_BLK" :
-    dtype == 8 ? "DT_REG" :
-    dtype == 10 ? "DT_LNK" :
-    dtype == 12 ? "DT_SOCK" :
-    dtype == 14 ? "DT_WHT" :
-    "???";
-    system_call(4, 1, str, strlen(str));
-}
+
 
 

