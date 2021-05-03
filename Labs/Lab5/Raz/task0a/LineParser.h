@@ -11,7 +11,6 @@ typedef struct cmdLine
     struct cmdLine *next;	/* next cmdLine in chain */
 } cmdLine;
 
-
 /* Parses a given string to arguments and other indicators */
 /* Returns NULL when there's nothing to parse */ 
 /* When successful, returns a pointer to cmdLine (in case of a pipe, this will be the head of a linked list) */

@@ -76,8 +76,6 @@ int main (int argc , char* argv[], char* envp[]){
       system_call(SYS_WRITE,STDOUT,d->buf,strlen(d->buf));
       system_call(SYS_WRITE,STDOUT,":  ",2);
       printDtype(d_type);
-      system_call(SYS_WRITE,STDOUT,itoa(d_type),10);
-      system_call(SYS_WRITE,STDOUT,"\n",1);
       curr += d->len;
     }
   }
