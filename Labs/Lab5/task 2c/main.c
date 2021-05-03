@@ -53,6 +53,7 @@ int main(int argc, char * argv[]){
             cmdLine * CL = parseCmdLines(input);
             if(CL->argCount ==1 && strcmp("quit" , CL->arguments[0]) == 0){
                 freeCmdLines(CL);
+                freeProcessList(global_proc);
                 break;
             }
             execute_D(CL);
@@ -72,6 +73,7 @@ int main(int argc, char * argv[]){
             cmdLine * CL = parseCmdLines(input);
             if(CL->argCount ==1 && strcmp("quit" , CL->arguments[0]) == 0){
                 freeCmdLines(CL);
+                freeProcessList(global_proc);
                 break;
             }
             execute(CL);
@@ -86,27 +88,34 @@ int main(int argc, char * argv[]){
 void execute(cmdLine * pCmdLine){
     if(pCmdLine->blocking == 1)
         waitpid(getpid() , NULL, 0);
-    if(strcmp(pCmdLine->arguments[0] , "cd") == 0)
+    if(strcmp(pCmdLine->arguments[0] , "cd") == 0){
         changeDir(pCmdLine);
+        freeCmdLines(pCmdLine);
+    }
     else if(strcmp(pCmdLine->arguments[0] , "proc") == 0){
         printProcessList(&global_proc);
+        freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0] , "suspend") == 0){
         suspend(pCmdLine);
+        freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0] , "kill") == 0){
         kill_proc(pCmdLine);
+        freeCmdLines(pCmdLine);
     }
     else{
-        char * fullName = fullDes(pCmdLine->arguments[0]);
+        //char * fullName = fullDes(pCmdLine->arguments[0]);
         int i = fork();
         if(i == 0){
-            if(execvp(fullName , pCmdLine->arguments) < 0){
+            if(execvp(pCmdLine->arguments[0] , pCmdLine->arguments) < 0){
                 perror("Fault");
-                free(fullName);
-                _exit(EXIT_FAILURE);
+                //free(fullName);
+                freeCmdLines(pCmdLine);
+                freeProcessList(global_proc);
+                exit(EXIT_FAILURE);
             }
-        free(fullName);
+        //free(fullName);
         }
         addProcess(&global_proc , pCmdLine , i);
     }
@@ -115,28 +124,36 @@ void execute(cmdLine * pCmdLine){
 void execute_D(cmdLine * pCmdLine){
     if(pCmdLine->blocking == 1)
         waitpid(getpid() , NULL, 0);
-    if(strcmp(pCmdLine->arguments[0] , "cd") == 0)
+    if(strcmp(pCmdLine->arguments[0] , "cd") == 0){
         changeDir_D(pCmdLine);
+        freeCmdLines(pCmdLine);
+    }
     else if(strcmp(pCmdLine->arguments[0] , "proc") == 0){
         printProcessList(&global_proc);
+        freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0] , "free") == 0){
         freeProcessList(global_proc);
+        freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0] , "suspend") == 0){
         suspend(pCmdLine);
+        freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0] , "kill") == 0){
         kill_proc(pCmdLine);
+        freeCmdLines(pCmdLine);
     }
     else{
-        char * fullName = fullDes(pCmdLine->arguments[0]);
+        //char * fullName = fullDes(pCmdLine->arguments[0]);
         int i = fork();
         if(i == 0){
-            if(execvp(fullName , pCmdLine->arguments) < 0){
+            if(execvp(pCmdLine->arguments[0] , pCmdLine->arguments) < 0){
                 perror("Fault");
-                free(fullName);
-                _exit(EXIT_FAILURE);
+                //free(fullName);
+                freeCmdLines(pCmdLine);
+                freeProcessList(global_proc);
+                exit(EXIT_FAILURE);
             }
         }else{
             addProcess(&global_proc , pCmdLine , i);
@@ -145,7 +162,7 @@ void execute_D(cmdLine * pCmdLine){
                 printf(" %s" , pCmdLine->arguments[j]);
             printf("\n");
         }
-        free(fullName);
+        //free(fullName);
     }
 }
 
@@ -262,8 +279,18 @@ void freeProcessList(process* process_list){
 
 void updateProcessList(process **process_list){
     if((*process_list) != NULL){
-        if(waitpid((*process_list)->pid , NULL , WNOHANG) == -1){
+        int status;
+        pid_t pid = waitpid((*process_list)->pid , &status , WNOHANG | WUNTRACED | WCONTINUED);
+        printf("STATUS: %d\n" , pid);
+        
+        if(pid == -1){
             (*process_list)->status = TERMINATED;
+        }
+        else if(WIFSTOPPED(status)){
+            (*process_list)->status = SUSPENDED;
+        }
+        else if(WIFCONTINUED(status)){
+            (*process_list)->status = RUNNING;
         }
         updateProcessList(&(*process_list)->next);
     }
@@ -309,15 +336,15 @@ void suspend(cmdLine * pCmdLine){
     if(i == 0){
         if(pCmdLine->argCount != 3 || findPid(global_proc , pid)  == -1){
             perror("Fault: wrong arguments");
-            return;
+            exit(EXIT_FAILURE);
         }else{
             int cond = kill(pid, SIGTSTP);
-            if(cond != 0){ perror("Cannot complete command"); return; }
-            updateProcessStatus(global_proc, pid, SUSPENDED);
+            if(cond != 0){ perror("Cannot complete command"); exit(EXIT_FAILURE); return; }
             sleep(atoi(pCmdLine->arguments[2]));
             kill(pid, SIGCONT);
-            if(cond != 0){ perror("Cannot complete command"); return; }
-            updateProcessStatus(global_proc, pid, RUNNING);
+            if(cond != 0){ perror("Cannot complete command"); exit(EXIT_FAILURE); return; }
+            freeProcessList(global_proc);
+            exit(EXIT_SUCCESS);
         }
     }
 }
@@ -331,7 +358,7 @@ void kill_proc(cmdLine * pCmdLine){
     {
         int cond = kill(pid, SIGINT);
         if(cond != 0){ perror("Cannot complete command"); return; }
-        updateProcessStatus(global_proc, pid, TERMINATED);
+        //updateProcessStatus(global_proc, pid, TERMINATED);
     }
 }
 
