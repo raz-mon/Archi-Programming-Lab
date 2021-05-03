@@ -16,6 +16,7 @@ typedef struct process{
 } process;
 int debug_mode = 0;
 void execute(cmdLine* pCmdLine);
+void freeProcessList(process* process_list);
 process* processList = NULL;
 
 int main(int argc, char* argv[]){
@@ -34,14 +35,17 @@ int main(int argc, char* argv[]){
 
     //parseCmdLines
     cmdLine* pCmdLine = parseCmdLines(line);
-    if (strcmp(pCmdLine->arguments[0], "quit") == 0)
+    if (strcmp(pCmdLine->arguments[0], "quit") == 0){
+        freeProcessList(processList);
+        freeCmdLines(pCmdLine);
         exit(0);
-
+    }
+        
     if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'd')
         debug_mode = 1;        // Debugger mode.
     
-    execute(pCmdLine);
-
+        execute(pCmdLine);
+    
     }
 }
 

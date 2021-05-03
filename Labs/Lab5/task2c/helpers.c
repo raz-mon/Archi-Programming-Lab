@@ -48,9 +48,20 @@ void freeProcessList(process* process_list){
 }
 
 void updateProcessList(process **process_list){
-    int a = 1;
-    if (waitpid((*process_list)->pid, &a, WNOHANG) == -1)
-        (*process_list)->status = TERMINATED;
+    
+    int status;
+    pid_t result = waitpid((*process_list)->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+
+    if(result > 0) { // Signal has been received
+        if (WIFSTOPPED(status)) {
+            (*process_list)->status = SUSPENDED;
+        } else if (WIFCONTINUED(status)) {
+            (*process_list)->status = RUNNING;
+        }
+    }
+    else if (result == -1)
+        (*process_list)->status = TERMINATED;    
+    
     if ((*process_list)->next != NULL)
         updateProcessList(&((*process_list)->next));
 }
@@ -123,8 +134,6 @@ int contains_pid(process* process_list, int pid){
 }
 
 void updateProcessStatus(process* process_list, int pid, int status){
-    //if (!contains_pid(process_list, pid))
-    //    return;
     if (process_list == NULL)
         return;
     if (process_list->pid == pid){
@@ -132,6 +141,27 @@ void updateProcessStatus(process* process_list, int pid, int status){
     }
     else if(process_list->next != NULL)
         updateProcessStatus(process_list->next, pid, status);
+}
+
+void suspend(cmdLine * pCmdLine){
+    int i = fork();
+    pid_t pid = atoi(pCmdLine->arguments[1]);
+    if(i == 0){
+        if(pCmdLine->argCount != 3 || contains_pid(processList , pid)  == -1){
+            perror("Fault: wrong arguments");
+            return;
+        }else{
+            int cond = kill(pid, SIGTSTP);
+            if(cond != 0){ perror("Cannot complete command"); return; }
+            //updateProcessStatus(processList, pid, SUSPENDED);
+            sleep(atoi(pCmdLine->arguments[2]));
+            kill(pid, SIGCONT);
+            if(cond != 0){ perror("Cannot complete command"); return; }
+           // updateProcessStatus(processList, pid, RUNNING);
+           freeProcessList(processList);
+           exit(0);
+        }
+    }
 }
 
 void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' command are done from the main-process.
@@ -149,40 +179,47 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         char path2[PATH_MAX];
         getcwd(path2, PATH_MAX);
         printf("current directory: %s\n", path2);       // Print the current directory.
+        freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0], "proc") == 0){
         if (processList == NULL)
-            printf("nothing to print, bitch\n");
-        else
+            printf("List empty\n");
+        else{
             printProcessList(&processList);
+            freeCmdLines(pCmdLine);
+        }
     }
     else if(strcmp(pCmdLine->arguments[0], "free") == 0){
         if (processList == NULL)
-            printf("nothing to free, bitch\n");
-        else
+            printf("List empty\n");
+        else{
             freeProcessList(processList);
+            freeCmdLines(pCmdLine);
+        }
     }
     else if(strcmp(pCmdLine->arguments[0], "suspend") == 0){
         if (contains_pid(processList, atoi(pCmdLine->arguments[1])) != -1){
-            pid_t a = (pid_t)pCmdLine->arguments[1];
-            kill(a, SIGTSTP);
-            updateProcessStatus(processList, a, SUSPENDED);
+            suspend(pCmdLine);
+            freeCmdLines(pCmdLine);
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "kill") == 0){
         if (contains_pid(processList, atoi(pCmdLine->arguments[1])) != -1){
-            pid_t a = (pid_t)pCmdLine->arguments[1];
-            kill(a, SIGINT);
+            pid_t a = (pid_t)atoi(pCmdLine->arguments[1]);
             updateProcessStatus(processList, a, TERMINATED);
+            int cond = kill(a, SIGINT);
+            freeCmdLines(pCmdLine);
         }
     }
+    /*
     else if(strcmp(pCmdLine->arguments[0], "wake") == 0){
         if (contains_pid(processList, atoi(pCmdLine->arguments[1])) != -1){
             pid_t a = (pid_t)pCmdLine->arguments[1];
-            kill(a, SIGCONT);
             updateProcessStatus(processList, a, RUNNING);
+            kill(a, SIGCONT);
         }
     }
+    */
     else{
         int i = fork();
         if (pCmdLine->blocking == 1){
@@ -190,7 +227,7 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
             waitpid(i, &a, 0);
         }
         if (i == 0){            
-            int a = execvp(real_path, pCmdLine->arguments);
+            int a = execvp(pCmdLine->arguments[0], pCmdLine->arguments);
             if (a < 0 ){
                 freeCmdLines(pCmdLine);
                 perror("Could not execute the command!!");
@@ -198,7 +235,6 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
             }
         }
         addProcess(&processList, pCmdLine, i);
-        //exit(0);            // No need for this process any more;
     }
         
     if (debug_mode == 1){
@@ -211,6 +247,8 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
     }
     //freeCmdLines(pCmdLine);
 }
+
+
 
 
 
