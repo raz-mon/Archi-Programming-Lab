@@ -1,10 +1,11 @@
-section .bss
+section .bss                ; Uninitialized data.
 
-section .data
+section .data               ; Initialized data.
 
-section .rodata
+section .rodata             ; Read-only data.
+    initial_print: db "calc: ",10,0
 
-section .text
+section .text               ; executable instructions of a program
   align 16
   global main
   extern printf
@@ -22,12 +23,28 @@ section .text
 
 
 main:
-
-
+    pushad
+    pushfd
+                                ; If there are argumrents for mycalc(), push them here.
     call mycalc
 
 
 mycalc:
+    push ebp					; 
+	mov ebp, esp				; 
+	pushad						; Save configuration of registers.
+
+    push initial_print          ; print "calc:".
+    call printf
+    add esp, 4
+
+    
+
+
+
+
+    
+
 
 
 
