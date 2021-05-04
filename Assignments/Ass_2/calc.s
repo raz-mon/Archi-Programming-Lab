@@ -35,7 +35,7 @@ section	.text
 
 
 section .bss                ; Uninitialized data.
-
+    operand_stack: resd 63                              ; Remember to save what is the size is from the user.
 section .data               ; Initialized data.
 
 section .rodata             ; Read-only data.
@@ -77,11 +77,11 @@ mycalc:
     my_printf1 "calc:"           ; print "calc:".
 
     ;testing shit:
-    ;mov ebx, 10o
-    ;my_printf2	ebx, "The number is: %ld"
-    ;mov ecx, 20o
-    ;add ebx, ecx
-    ;my_printf2	ebx, "The number is: %ld"
+    mov ebx, 10
+    my_printf2	ebx, "The number is: %ld"
+    mov ecx, 20
+    add ebx, ecx
+    my_printf2	ebx, "The number is: %ld"
     
     ;allocate the operand-stack (default size)
     push dword 20
@@ -89,11 +89,13 @@ mycalc:
     add esp, 4
     
 
+    operand_stack: %1num dd 0
+
 
     ;Testing the allocated memory:
-    mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
-    mov ebx, dword [eax+STK_UNIT*3]
-    my_printf2 ebx, "The number is: %ld"
+    ;mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
+    ;mov ebx, dword [eax+STK_UNIT*3]
+    ;my_printf2 ebx, "The number is: %ld"
 
 
 
