@@ -77,12 +77,25 @@ mycalc:
     my_printf1 "calc:"           ; print "calc:".
 
     ;testing shit:
-    mov ebx, 10o
-    my_printf2	ebx, "The number is: %ld"
-    mov ecx, 20o
-    add ebx, ecx
-    my_printf2	ebx, "The number is: %ld"
+    ;mov ebx, 10o
+    ;my_printf2	ebx, "The number is: %ld"
+    ;mov ecx, 20o
+    ;add ebx, ecx
+    ;my_printf2	ebx, "The number is: %ld"
     
+    ;allocate the operand-stack (default size)
+    push dword 20
+    call malloc
+    add esp, 4
+    
+
+
+    ;Testing the allocated memory:
+    mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
+    mov ebx, dword [eax+STK_UNIT*3]
+    my_printf2 ebx, "The number is: %ld"
+
+
 
 
     mov esp, ebp                ; "release" the activation frame.
