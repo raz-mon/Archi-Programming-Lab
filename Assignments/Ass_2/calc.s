@@ -48,10 +48,19 @@ section	.text
 
 %macro update_linkedlist 0
     mov byte [eax], dl                              ; insert dl byte in the first byte in new link
+
+    cmp dword[current_link_ptr], 0
+    jnz not_zero
+    mov dword [current_link_ptr], eax
+    inc dword [current_link_ptr]
+    jmp end
+
+not_zero:
     mov esi, dword [current_link_ptr]               ; esi is now a ptr to the latest updated link (with offset 1)
     mov dword [esi], eax                            ; old link point to the begginig of new link
     inc esi                                         ; old link point to the second byte in new link 
     mov dword [current_link_ptr], esi               ; current_link_ptr point to second byte in new link
+end:
 %endmacro
 
 
@@ -61,7 +70,7 @@ section .bss                ; Uninitialized data.
     buffer:        resb 81                              ; max size - input line , 80 bytes + 1 byte
 
 section .data               ; Initialized data.
-    current_link_ptr: db 4
+    current_link_ptr: dd 0
 
 section .rodata             ; Read-only data.
     initial_print: db "calc: ",10,0
@@ -102,7 +111,7 @@ mycalc:
     my_printf1 "calc:"           ; print "calc:".
 
 section .data               ; Initialized data.
-    input_string: db "123"
+    input_string: db "5"
     ;len: equ $-input_string
     temp: dw 0
     counter: dd 0
@@ -111,11 +120,10 @@ section .bss
     pointer: resb 4              ; Will be used to point at the input string at different
 section .text
 
-; ecx -> pointer to the input array of numbers (saved in ascii).
     mov ebx, 0                   ; Initialize bx with 0.
     mov eax, 0                   ; Initialize ax with 0.
     mov edx, 0                   ; Initialize dx with 0.
-    mov cx, 0                    ; cx will be the index counter of ax.(It is the only one that shl works with..).
+    mov cx,  0                    ; cx will be the index counter of ax.(It is the only one that shl works with..).
     mov ecx, 0
     ; Start loop that "isolates" the relevant 8 bits.
     
@@ -127,15 +135,33 @@ mov byte[first_char], dl
 mov dl, 0
 
 mov dword[pointer], input_string
-
 add dword[pointer], 2
-
 mov dword[counter], 2
 
-mov edx, 0
 
-bit_loop:    
-    ;mov bx, 0
+
+
+
+
+;            fgets_ass                               ; stdio function fgets, put in buffer the wanted data
+;            mov edx, buffer                         ; pointer to buffer
+
+;            mov ecx, -1
+;        loop:
+;            mov esi, buffer
+;            inc ecx
+;            cmp byte[esi + ecx], 10
+;            jnz loop
+;            dec ecx
+;        add esi, ecx
+
+;        mov dword[pointer], esi                 ; pointer to the msb of the input.
+;        mov dword[counter], ecx                 ; Holds the amount of numbers in the input.
+
+
+
+
+bit_loop:
     mov esi, dword [pointer]
     mov bl, byte [esi]         ; bl points to the current character in the input.
     sub bl, 48                 ; get number-value of the input char (binary representation).
@@ -153,22 +179,47 @@ bit_loop:
     cmp cl, 8                  ; Check if we have 8 bits already.
     jl bit_loop                ; If cl<8 -> do the loop again.
 
-;construct_new_link: 
-;    create_new_link
-;    update_linkedlist
-;    jmp bit_loop
+construct_new_link: 
+    create_new_link
+    update_linkedlist
+    ; Need to initialize cl again, with the number of bits that are in ah when we get here.
+    jmp bit_loop
+
+mov esi, dword [current_link_ptr]
+dec esi
+
+push esi
+push temp2
+call printf
+add esp, 12
+
 
 print_dx_test:
     ;and dx, 0xFF
-    push dx
-    push temp2
-    call printf
-    add esp, 8
+    ;push dx
+    ;push temp2
+    ;call printf
+    ;add esp, 8
 
     endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.
 
 
 end_of_program:                            ; End the program.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -199,6 +250,12 @@ end_of_program:                            ; End the program.
 ;jmp loop
 
 
+;    print_dx_test:
+;        ;and dx, 0xFF
+;        push dx
+;        push temp2
+;        call printf
+;        add esp, 8
 
 
 
@@ -213,5 +270,22 @@ end_of_program:                            ; End the program.
 
 
 
+;    bit_loop:
+;        mov esi, dword [pointer]
+;        mov bl, byte [esi]         ; bl points to the current character in the input.
+;        sub bl, 48                 ; get number-value of the input char (binary representation).
+
+ ;       shl bx, cl                 ; Put the bits in the right place before adding to ax.
+ ;       add cl, 3
+ ;       add dx, bx                 ; Add bits to the representation.
+
+  ;      dec dword[pointer]
+
+ ;       cmp dword [counter], 0
+ ;       jz print_dx_test            ; jmp from loop when counter = 0.
+ ;       dec dword [counter]
+
+  ;      cmp cl, 8                  ; Check if we have 8 bits already.
+   ;     jl bit_loop                ; If cl<8 -> do the loop again.
 
 
