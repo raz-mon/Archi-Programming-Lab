@@ -21,6 +21,19 @@
     add esp, STK_UNIT*3                     
 %endmacro
 
+%macro create_new_link 0
+    push 5
+    call malloc
+    add esp, STK_UNIT * 1
+%endmacro
+
+%macro update_linkedlist 0
+    mov byte [eax], dl                              ; insert dl byte in the first byte in new link
+    mov esi, dword [current_link_ptr]               ; esi is now a ptr to the latest updated link (with offset 1)
+    mov dword [esi], eax                            ; old link point to the begginig of new link
+    inc esi                                         ; old link point to the second byte in new link 
+    mov dword [current_link_ptr], esi               ; current_link_ptr point to second byte in new link
+%endmacro
 
 %macro	my_printf2	2
 section	.rodata
@@ -41,14 +54,12 @@ section	.text
 	add	esp, STK_UNIT*1
 %endmacro
 
-
-
 section .bss                ; Uninitialized data.
     operand_stack: resd 63                              ; Remember to save what is the size is from the user.
     buffer:        resb 81                              ; max size - input line , 80 bytes + 1 byte for NL + 1 byte for '0'
 
 section .data               ; Initialized data.
-    
+    current_link_ptr: db 4
 
 section .rodata             ; Read-only data.
     initial_print: db "calc: ",10,0
@@ -86,7 +97,7 @@ main:
 mycalc:
     startFunc 0                 ; Macro code will replace this. Defaultly allocetes 5*5 array (5 entrences, each of size 5).
 
-    my_printf1 "calc:"           ; print "calc:".
+    my_printf1 "calc: "           ; print "calc:".
 
 section .data               ; Initialized data.
     pointer_to_number_string: db "3"
@@ -126,20 +137,16 @@ bit_loop:
     mov bl, byte [edx]         ; bl points to the current character in the input.
 
     cmp cl, 8                  ; Check if we have 8 bits already.
+    ;je construct_new_link
     jl bit_loop                ; If cl<8 -> do the loop again.
 
-    
-
-    ; Test: print the number we got in ax.
-print_eax_test:
-    push ax
-    push temp2
-    call printf
-    add esp, 12
-
-    
+construct_new_link: 
+    create_new_link
+    update_linkedlist
 
     mov esp, ebp                ; "release" the activation frame.
     pop ebp                     ; restore activation frame of main.
     ret                         ; return from the function.
     ;endFunc                     ; Macri code will replace with code for exiting a function.
+
+end_of_program:
