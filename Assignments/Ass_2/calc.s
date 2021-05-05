@@ -95,21 +95,20 @@ bit_loop:
     mov bl, [edx]
     inc edx             
 
+    cmp bl, 0                   ; Check if there are any numbers left to read in the input.
+    jz print_eax_test           ; If not, finish the loop.    
+
     sub bl, 48                 ; get number-value of the input char (binary representation).
 
     shl bl, cl                 ; Put the bits in the right place before adding to ax.
     add cl, 3
     add eax, ebx                 ; Add bits to the representation.
-    cmp cl, 8                  ; Check if we have 8 bits already.
 
-    ; Need to check here before we jump back that we have another number (3 bits) to read.
-    cmp bl, 0
-    jz end_of_program
+    cmp cl, 8                  ; Check if we have 8 bits already.
     jl bit_loop                ; If cl<8 -> do the loop again.
 
-
-
     ; Test: print the number we got in ax.
+print_eax_test:
     push eax
     push temp2
     call printf
