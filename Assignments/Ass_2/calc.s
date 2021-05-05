@@ -48,7 +48,6 @@ section .bss                ; Uninitialized data.
     buffer:        resb 81                              ; max size - input line , 80 bytes + 1 byte for NL + 1 byte for '0'
 
 section .data               ; Initialized data.
-    pointer_to_number_string: db "3"
     
 
 section .rodata             ; Read-only data.
@@ -85,21 +84,29 @@ main:
 
 
 mycalc:
-    startFunc 5                 ; Macro code will replace this. Defaultly allocetes 5*5 array (5 entrences, each of size 5).
-    mov ecx, esp                ; 
-    add ecx, 25                 ; ecx will point at the first cell in the operand stack.
+    startFunc 0                 ; Macro code will replace this. Defaultly allocetes 5*5 array (5 entrences, each of size 5).
 
     my_printf1 "calc:"           ; print "calc:".
 
-    ; ecx -> pointer to the input array of numbers (saved in ascii).
+section .data               ; Initialized data.
+    input_string: db "3"
+    ;len: equ $-input_string
+section .bss
+    first_char: resb 1
+    pointer: resb 4              ; Will be used to point at the input string at different
+section .text
+
+; ecx -> pointer to the input array of numbers (saved in ascii).
     mov ebx, 0                   ; Initialize bx with 0.
     mov eax, 0                   ; Initialize ax with 0.
+    mov edx, 0                   ; Initialize dx with 0.
     mov cl, 0                   ; cl will be the index counter of ax.(It is the only one that shl works with..).
     mov ecx, 0
     ; Start loop that "isolates" the relevant 8 bits.
-
+    
     ; Just for the test, we initialize ecx to point at "3".
     
+<<<<<<< HEAD
 <<<<<<< HEAD
 loop:
     fgets_ass                               ; stdio function fgets, put in buffer the wanted data
@@ -136,35 +143,57 @@ bit_loop:
     inc edx             
 >>>>>>> 530f8f02e314467666e50364b13002165c7d6812
 
+=======
+mov dl, byte [input_string]
+sub dl, 48
+mov byte[first_char], dl
+;   mov edx, pointer_to_number_string
+;   add edx, 1                      ; bl will point to the end of the input number. 
+mov dword[pointer], input_string
+add dword[pointer], 0
+ 
+
+bit_loop:    
+    mov eax, dword [pointer]
+    mov bl, byte [eax]         ; bl points to the current character in the input.
+>>>>>>> e40f1dfb0ab75d90bdc08a29b268ed0f586e0cbb
     sub bl, 48                 ; get number-value of the input char (binary representation).
+
+    ;push bx
+    ;push temp2
+    ;call printf
+    ;add esp, 6
 
     shl bl, cl                 ; Put the bits in the right place before adding to ax.
     add cl, 3
-    add eax, ebx                 ; Add bits to the representation.
-    cmp cl, 8                  ; Check if we have 8 bits already.
-
-    ; Need to check here before we jump back that we have another number (3 bits) to read.
-    cmp bl, 0
-    jz end_of_program
-    jl bit_loop                ; If cl<8 -> do the loop again.
+    add dx, bx                 ; Add bits to the representation.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+    dec dword[pointer]
+    
+    cmp bl, [first_char]        ; Check if there are any numbers left to read in the input.
+    jz print_dx_test           ; If not, finish the loop. 
+>>>>>>> e40f1dfb0ab75d90bdc08a29b268ed0f586e0cbb
 
+    cmp cl, 8                  ; Check if we have 8 bits already.
+    jl bit_loop                ; If cl<8 -> do the loop again.
 
     ; Test: print the number we got in ax.
-    push eax
+print_dx_test:
+    push dx
     push temp2
     call printf
-    add esp, 12
+    add esp, 6
 
-    
 
 >>>>>>> 530f8f02e314467666e50364b13002165c7d6812
     mov esp, ebp                ; "release" the activation frame.
     pop ebp                     ; restore activation frame of main.
     ret                         ; return from the function.
-    ;endFunc                     ; Macri code will replace with code for exiting a function.
+    ;endFunc                     ; Macro code will replace with code for exiting a function.
 
 
 end_of_program:                            ; End the program.
@@ -174,6 +203,35 @@ end_of_program:                            ; End the program.
 
 
 
+
+
+
+;        mov dl, byte [pointer_to_number_string]
+;    sub dl, 48
+;    mov byte[first_char], dl
+;    mov edx, pointer_to_number_string
+;    add edx, 1                      ; bl will point to the end of the input number. 
+;
+;    bit_loop:            
+;        mov bl, byte [edx]         ; bl points to the current character in the input.
+;        sub bl, 48                 ; get number-value of the input char (binary representation).
+;
+;        push bx
+;        push temp2
+;        call printf
+;        add esp, 6
+;
+;        shl bl, cl                 ; Put the bits in the right place before adding to ax.
+;        add cl, 3
+;        add ax, bx                 ; Add bits to the representation.
+;
+;        dec edx
+;        
+;        cmp bl, [first_char]        ; Check if there are any numbers left to read in the input.
+;        jz end_of_program           ; If not, finish the loop. 
+;
+;        cmp cl, 8                  ; Check if we have 8 bits already.
+;        jl bit_loop                ; If cl<8 -> do the loop again.
 
 
 
