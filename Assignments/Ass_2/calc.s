@@ -108,14 +108,19 @@ loop:
     cmp al, 10                              ; check if empty(only NL was sent)
     jz loop
 
-    sec_loop:
-        cmp al, 57        
-        
+    cmp al, 57        
+    jg lexical_commands
+    cmp al, 48
+    jl mathematical_commands
+        numbers:
+        sub al, 48
+        my_printf2	eax, "The number is: %d"
         inc ebx                                     
         mov al, byte [buffer + ebx]                 
         cmp al, 10                                  
-        jnz sec_loop                               
+        jnz numbers                               
     jmp loop
+
 
     ;sec_loop:
     ;    my_printf2	eax, "The number is: %d"        ; print each bye in buffer, temporary for as
@@ -133,6 +138,9 @@ loop:
     ;mov ebx, dword [eax+STK_UNIT*3]
     ;my_printf2 ebx, "The number is: %ld"
 
+lexical_commands:
+
+mathematical_commands:
 
     mov esp, ebp                ; "release" the activation frame.
     pop ebp                     ; restore activation frame of main.
