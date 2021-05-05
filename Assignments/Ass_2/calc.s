@@ -118,7 +118,27 @@ bit_loop:
     jz end_of_program
     jl bit_loop                ; If cl<8 -> do the loop again.
 
+loop:
+    fgets_ass                               ; stdio function fgets, put in buffer the wanted data
+    mov edx, buffer                         ; pointer to buffer
+    mov eax, 0                              
+    mov ebx, 0                              ; counter for byte index
+    mov al, byte [buffer + ebx]             ; set al as first buffer's byte
+    cmp al, 10                              ; check if empty(only NL was sent)
+    jz loop
 
+    cmp al, 57        
+    jg lexical_commands
+    cmp al, 48
+    jl mathematical_commands
+        numbers:
+        sub al, 48
+        my_printf2	eax, "The number is: %d"
+        inc ebx                                     
+        mov al, byte [buffer + ebx]                 
+        cmp al, 10                                  
+        jnz numbers                               
+    jmp loop
 
     ; Test: print the number we got in ax.
     push eax
