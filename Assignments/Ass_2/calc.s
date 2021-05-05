@@ -37,7 +37,7 @@ section	.text
 section .bss                ; Uninitialized data.
     operand_stack: resd 63                              ; Remember to save what is the size is from the user.
 section .data               ; Initialized data.
-    pointer_to_number_string: db "353"
+    pointer_to_number_string: db "3"
     
 
 section .rodata             ; Read-only data.
@@ -87,7 +87,7 @@ mycalc:
     mov ecx, 0
     ; Start loop that "isolates" the relevant 8 bits.
 
-    ; Just for the test, we initialize ecx to point at "353".
+    ; Just for the test, we initialize ecx to point at "3".
     
 mov edx, pointer_to_number_string
 
@@ -97,14 +97,15 @@ bit_loop:
 
     sub bl, 48                 ; get number-value of the input char (binary representation).
 
-    shl ebx, cl                 ; Put the bits in the right place before adding to ax.
+    shl bl, cl                 ; Put the bits in the right place before adding to ax.
     add cl, 3
     add eax, ebx                 ; Add bits to the representation.
     cmp cl, 8                  ; Check if we have 8 bits already.
 
     ; Need to check here before we jump back that we have another number (3 bits) to read.
-
-   jl bit_loop                ; If cl<8 -> do the loop again.
+    cmp bl, 0
+    jz end_of_program
+    jl bit_loop                ; If cl<8 -> do the loop again.
 
 
 
@@ -113,7 +114,7 @@ bit_loop:
     push temp2
     call printf
     add esp, 12
-    
+
     
 
     mov esp, ebp                ; "release" the activation frame.
