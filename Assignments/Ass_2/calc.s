@@ -13,6 +13,15 @@
     ret                         ; return from the function.
 %endmacro
 
+%macro fgets_ass 0
+    push dword [stdin]              ;path to file(stdin)
+    push dword 81                   ;max lenght
+    push dword buffer               ;input buffer
+    call fgets
+    add esp, STK_UNIT*3                     
+%endmacro
+
+
 %macro	my_printf2	2
 section	.rodata
 %%Str2:	db	%2 , 10, 0
@@ -36,6 +45,8 @@ section	.text
 
 section .bss                ; Uninitialized data.
     operand_stack: resd 63                              ; Remember to save what is the size is from the user.
+    buffer:        resb 81                              ; max size - input line , 80 bytes + 1 byte for NL + 1 byte for '0'
+
 section .data               ; Initialized data.
 
 section .rodata             ; Read-only data.
@@ -88,16 +99,39 @@ mycalc:
     call malloc
     add esp, 4
     
+loop:
+    fgets_ass                               ; stdio function fgets, put in buffer the wanted data
+    mov edx, buffer                         ; pointer to buffer
+    mov eax, 0                              
+    mov ebx, 0                              ; counter for byte index
+    mov al, byte [buffer + ebx]             ; set al as first buffer's byte
+    cmp al, 10                              ; check if empty(only NL was sent)
+    jz loop
 
-    operand_stack: %1num dd 0
+    sec_loop:
+        cmp al, 57        
+        
+        inc ebx                                     
+        mov al, byte [buffer + ebx]                 
+        cmp al, 10                                  
+        jnz sec_loop                               
+    jmp loop
+
+    ;sec_loop:
+    ;    my_printf2	eax, "The number is: %d"        ; print each bye in buffer, temporary for as
+    ;    inc ebx                                     ; inc index's counter
+    ;    mov al, byte [buffer + ebx]                 ; move to next byte in buffer
+    ;    cmp al, 10                                  ; check if end of line
+    ;    jnz sec_loop                                ; repeat sec loop
+    ;jmp loop
+
+    ;operand_stack: %1num dd 0
 
 
     ;Testing the allocated memory:
     ;mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
     ;mov ebx, dword [eax+STK_UNIT*3]
     ;my_printf2 ebx, "The number is: %ld"
-
-
 
 
     mov esp, ebp                ; "release" the activation frame.
@@ -107,8 +141,6 @@ mycalc:
 
 
 end_of_program:                            ; End the program.
-
-
     
 
 
