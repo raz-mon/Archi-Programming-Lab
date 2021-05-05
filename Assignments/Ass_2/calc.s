@@ -78,8 +78,10 @@ mycalc:
     my_printf1 "calc:"           ; print "calc:".
 
 section .data               ; Initialized data.
-    input_string: db "3"
+    input_string: db "123"
     ;len: equ $-input_string
+    temp: dw 0
+    counter: dd 0
 section .bss
     first_char: resb 1
     pointer: resb 4              ; Will be used to point at the input string at different
@@ -89,49 +91,54 @@ section .text
     mov ebx, 0                   ; Initialize bx with 0.
     mov eax, 0                   ; Initialize ax with 0.
     mov edx, 0                   ; Initialize dx with 0.
-    mov cl, 0                   ; cl will be the index counter of ax.(It is the only one that shl works with..).
+    mov cx, 0                    ; cx will be the index counter of ax.(It is the only one that shl works with..).
     mov ecx, 0
     ; Start loop that "isolates" the relevant 8 bits.
     
-    ; Just for the test, we initialize ecx to point at "3".
+    ; Just for the test, we initialize ecx to point at "".
     
 mov dl, byte [input_string]
 sub dl, 48
 mov byte[first_char], dl
-;   mov edx, pointer_to_number_string
-;   add edx, 1                      ; bl will point to the end of the input number. 
+mov dl, 0
+
 mov dword[pointer], input_string
-add dword[pointer], 0
- 
+
+add dword[pointer], 2
+
+mov dword[counter], 2
+
+mov edx, 0
 
 bit_loop:    
-    mov eax, dword [pointer]
-    mov bl, byte [eax]         ; bl points to the current character in the input.
+    mov bx, 0
+    mov esi, dword [pointer]
+    mov bl, byte [esi]         ; bl points to the current character in the input.
     sub bl, 48                 ; get number-value of the input char (binary representation).
 
-    ;push bx
-    ;push temp2
-    ;call printf
-    ;add esp, 6
-
-    shl bl, cl                 ; Put the bits in the right place before adding to ax.
+    shl bx, cl                 ; Put the bits in the right place before adding to ax.
     add cl, 3
     add dx, bx                 ; Add bits to the representation.
 
     dec dword[pointer]
-    
-    cmp bl, [first_char]        ; Check if there are any numbers left to read in the input.
-    jz print_dx_test           ; If not, finish the loop. 
+
+    cmp dword [counter], 0
+    jz print_dx_test            ; jmp from loop when counter = 0.
+    dec dword [counter]
 
     cmp cl, 8                  ; Check if we have 8 bits already.
     jl bit_loop                ; If cl<8 -> do the loop again.
 
-    ; Test: print the number we got in ax.
+
+
 print_dx_test:
+    ;and dx, 0xFF
     push dx
     push temp2
     call printf
-    add esp, 6
+    add esp, 8
+
+
 
 
     mov esp, ebp                ; "release" the activation frame.
@@ -142,7 +149,7 @@ print_dx_test:
 
 end_of_program:                            ; End the program.
 
-
+;
     
 
 
