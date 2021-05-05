@@ -113,7 +113,7 @@ bit_loop:
     push temp2
     call printf
     add esp, 12
-
+    
     
 
     mov esp, ebp                ; "release" the activation frame.
