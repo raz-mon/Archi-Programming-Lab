@@ -48,9 +48,12 @@ section .bss                ; Uninitialized data.
     buffer:        resb 81                              ; max size - input line , 80 bytes + 1 byte for NL + 1 byte for '0'
 
 section .data               ; Initialized data.
+    pointer_to_number_string: db "353"
+    
 
 section .rodata             ; Read-only data.
     initial_print: db "calc: ",10,0
+    temp2: db "the number is: %d",10,0
 
 section .text               ; executable instructions of a program
   align 16
@@ -77,6 +80,7 @@ main:
 
     popfd
     popad
+
     jmp end_of_program          ; Just in order not to go through code again.
 
 
@@ -87,18 +91,16 @@ mycalc:
 
     my_printf1 "calc:"           ; print "calc:".
 
-    ;testing shit:
-    mov ebx, 10
-    my_printf2	ebx, "The number is: %ld"
-    mov ecx, 20
-    add ebx, ecx
-    my_printf2	ebx, "The number is: %ld"
+    ; ecx -> pointer to the input array of numbers (saved in ascii).
+    mov ebx, 0                   ; Initialize bx with 0.
+    mov eax, 0                   ; Initialize ax with 0.
+    mov cl, 0                   ; cl will be the index counter of ax.(It is the only one that shl works with..).
+    mov ecx, 0
+    ; Start loop that "isolates" the relevant 8 bits.
+
+    ; Just for the test, we initialize ecx to point at "353".
     
-    ;allocate the operand-stack (default size)
-    push dword 20
-    call malloc
-    add esp, 4
-    
+<<<<<<< HEAD
 loop:
     fgets_ass                               ; stdio function fgets, put in buffer the wanted data
     mov edx, buffer                         ; pointer to buffer
@@ -126,14 +128,38 @@ loop:
     ;jmp loop
 
     ;operand_stack: %1num dd 0
+=======
+mov edx, pointer_to_number_string
+
+bit_loop:
+    mov bl, [edx]
+    inc edx             
+>>>>>>> 530f8f02e314467666e50364b13002165c7d6812
+
+    sub bl, 48                 ; get number-value of the input char (binary representation).
+
+    shl ebx, cl                 ; Put the bits in the right place before adding to ax.
+    add cl, 3
+    add eax, ebx                 ; Add bits to the representation.
+    cmp cl, 8                  ; Check if we have 8 bits already.
+
+    ; Need to check here before we jump back that we have another number (3 bits) to read.
+
+   jl bit_loop                ; If cl<8 -> do the loop again.
+
+<<<<<<< HEAD
+=======
 
 
-    ;Testing the allocated memory:
-    ;mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
-    ;mov ebx, dword [eax+STK_UNIT*3]
-    ;my_printf2 ebx, "The number is: %ld"
+    ; Test: print the number we got in ax.
+    push eax
+    push temp2
+    call printf
+    add esp, 12
+    
+    
 
-
+>>>>>>> 530f8f02e314467666e50364b13002165c7d6812
     mov esp, ebp                ; "release" the activation frame.
     pop ebp                     ; restore activation frame of main.
     ret                         ; return from the function.
@@ -142,6 +168,35 @@ loop:
 
 end_of_program:                            ; End the program.
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ; Old code.
+    ;allocate the operand-stack (default size)
+    ;push dword 20
+    ;call malloc
+    ;add esp, 4
+    ;operand_stack: %1num dd 0
+
+
+    ;Testing the allocated memory:
+    ;mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
+    ;mov ebx, dword [eax+STK_UNIT*3]
+    ;my_printf2 ebx, "The number is: %ld"
+
 
 
 

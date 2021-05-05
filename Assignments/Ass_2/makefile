@@ -8,5 +8,6 @@ exec: calc.s
 	rm calc.o
 
 .PHONY: clean
+clean:
 	rm -rf ./*.o calc
 
