@@ -136,8 +136,8 @@ mov byte[first_char], dl
 mov dl, 0
 
 mov dword[pointer], input_string
-add dword[pointer], 4
-mov dword[counter], 4
+add dword[pointer], 3
+mov dword[counter], 3
 
 bit_loop:
     mov esi, dword [pointer]
@@ -182,8 +182,6 @@ next2:
 
 
 
-
-
 end_loop:                               ; We arrive here after reading all the input number.
     create_new_link
     update_linkedlist
@@ -201,7 +199,9 @@ end_loop:                               ; We arrive here after reading all the i
     add esp, 12
     popad
 
-    ; 111101100101 = 7545 -> 101 In first link data, 15 in second
+    
+
+    ; 1111010101100101 = 7545 -> 101 In first link data, 245 in second
     
 
     endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.
