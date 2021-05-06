@@ -40,14 +40,15 @@ section	.text
 %endmacro
 
 %macro create_new_link 0
-    push 5
+    mov word[temp], dx
+    push dword 5
     call malloc
     add esp, STK_UNIT * 1
+    mov dx, word[temp]
 %endmacro
 
 %macro update_linkedlist 0
-    mov byte [eax], dl                              ; insert dl byte in the first byte in new link
-
+    mov byte [eax], dl         ; insert dl byte in the first byte in new link   
     cmp dword[current_link_ptr], 0
     jnz not_zero
     mov dword [current_link_ptr], eax
@@ -61,7 +62,6 @@ not_zero:
     mov dword [current_link_ptr], esi               ; current_link_ptr point to second byte in new link
 end:
 %endmacro
-
 
 
 section .bss                ; Uninitialized data.
@@ -93,13 +93,11 @@ section .text               ; executable instructions of a program
 
 
 main:
-    pushad                      ; Backup registers.
-    pushfd                      ; ; Backup flags.
+    
                                 ; If there are argumrents for mycalc(), push them here.
     call mycalc
 
-    popfd
-    popad
+
 
     jmp end_of_program          ; Just in order not to go through code again.
 
@@ -110,8 +108,7 @@ mycalc:
     my_printf1 "calc:"           ; print "calc:".
 
 section .data               ; Initialized data.
-    input_string: db "5"
-    ;len: equ $-input_string
+    input_string: db "753",0
     temp: dw 0
     counter: dd 0
 section .bss
@@ -136,6 +133,74 @@ mov dl, 0
 mov dword[pointer], input_string
 add dword[pointer], 2
 mov dword[counter], 2
+; input: "742"          ; 00000010
+bit_loop:
+    mov esi, dword [pointer]
+    mov bl, byte [esi]         ; bl points to the current character in the input.
+    sub bl, 48                 ; get number-value of the input char (binary representation).
+
+    shl bx, cl                 ; Put the bits in the right place before adding to ax.
+    add cl, 3
+    add dx, bx                 ; Add bits to the representation.
+
+    dec dword[pointer]
+
+    cmp dword [counter], 0
+    jz print_dx_test            ; jmp from loop when counter = 0.
+    dec dword [counter]
+
+    cmp cl, 8                  ; Check if we have 8 bits already.
+    jl bit_loop                ; If cl<8 -> do the loop again.
+
+
+print_dx_test:
+construct_new_link: 
+    create_new_link
+    update_linkedlist
+    ; Need to initialize cl again, with the number of bits that are in ah when we get here.
+    
+    mov dl, dh
+    mov dh, 0               ; Needs to be.
+    cmp cl, 8
+    jnz next1
+    mov cl, 0
+next1:
+    jmp bit_loop
+    cmp cl, 9
+    mov cl, 1
+    jmp bit_loop
+    cmp cl, 10
+    mov cl, 2
+    jmp bit_loop
+
+
+
+
+mov esi, dword [current_link_ptr]
+dec esi
+mov dx, 0
+mov dx, [esi]
+push word dx
+push temp2
+call printf
+add esp, 12
+
+
+
+;print_dx_test:
+;    and dx, 0xFF
+;    push dx
+;    push temp2
+;    call printf
+;    add esp, 8
+
+    endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.
+
+
+end_of_program:                            ; End the program.
+
+
+
 
 
 
@@ -160,47 +225,95 @@ mov dword[counter], 2
 
 
 
-bit_loop:
-    mov esi, dword [pointer]
-    mov bl, byte [esi]         ; bl points to the current character in the input.
-    sub bl, 48                 ; get number-value of the input char (binary representation).
-
-    shl bx, cl                 ; Put the bits in the right place before adding to ax.
-    add cl, 3
-    add dx, bx                 ; Add bits to the representation.
-
-    dec dword[pointer]
-
-    cmp dword [counter], 0
-    jz print_dx_test            ; jmp from loop when counter = 0.
-    dec dword [counter]
-
-    cmp cl, 8                  ; Check if we have 8 bits already.
-    jl bit_loop                ; If cl<8 -> do the loop again.
-
-construct_new_link: 
-    create_new_link
-    update_linkedlist
-    ; Need to initialize cl again, with the number of bits that are in ah when we get here.
-    jmp bit_loop
-
-mov esi, dword [current_link_ptr]
-dec esi
-
-push esi
-push temp2
-call printf
-add esp, 12
 
 
-print_dx_test:
-    ;and dx, 0xFF
-    ;push dx
-    ;push temp2
-    ;call printf
-    ;add esp, 8
-
-    endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.
 
 
-end_of_program:                            ; End the program.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;loop:
+;    fgets_ass                               ; stdio function fgets, put in buffer the wanted data
+;    mov edx, buffer                         ; pointer to buffer
+;    mov eax, 0                              
+;    mov ebx, 0                              ; counter for byte index
+;    mov al, byte [buffer + ebx]             ; set al as first buffer's byte
+;    cmp al, 10                              ; check if empty(only NL was sent)
+;    jz loop
+
+;    cmp al, 57        
+;    jg lexical_commands
+;    cmp al, 48
+;    jl mathematical_commands
+;        numbers:
+;        sub al, 48
+;        my_printf2	eax, "The number is: %d"
+;        inc ebx                                     
+;        mov al, byte [buffer + ebx]                 
+;        cmp al, 10                                  
+;        jnz numbers                               
+;jmp loop
+
+
+;    print_dx_test:
+;        ;and dx, 0xFF
+;        push dx
+;        push temp2
+;        call printf
+;        add esp, 8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;    bit_loop:
+;        mov esi, dword [pointer]
+;        mov bl, byte [esi]         ; bl points to the current character in the input.
+;        sub bl, 48                 ; get number-value of the input char (binary representation).
+
+ ;       shl bx, cl                 ; Put the bits in the right place before adding to ax.
+ ;       add cl, 3
+ ;       add dx, bx                 ; Add bits to the representation.
+
+  ;      dec dword[pointer]
+
+ ;       cmp dword [counter], 0
+ ;       jz print_dx_test            ; jmp from loop when counter = 0.
+ ;       dec dword [counter]
+
+  ;      cmp cl, 8                  ; Check if we have 8 bits already.
+;     jl bit_loop                ; If cl<8 -> do the loop again.
