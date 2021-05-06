@@ -65,7 +65,6 @@ end:
 %endmacro
 
 
-
 section .bss                ; Uninitialized data.
     operand_stack: resd 63                              ; Remember to save what is the size is from the user.
     buffer:        resb 81                              ; max size - input line , 80 bytes + 1 byte
@@ -95,13 +94,11 @@ section .text               ; executable instructions of a program
 
 
 main:
-    pushad                      ; Backup registers.
-    pushfd                      ; ; Backup flags.
+    
                                 ; If there are argumrents for mycalc(), push them here.
     call mycalc
 
-    popfd
-    popad
+
 
     jmp end_of_program          ; Just in order not to go through code again.
 
@@ -112,8 +109,7 @@ mycalc:
     my_printf1 "calc:"           ; print "calc:".
 
 section .data               ; Initialized data.
-    input_string: db "753"
-    ;len: equ $-input_string
+    input_string: db "753",0
     temp: dw 0
     counter: dd 0
 section .bss
@@ -138,7 +134,7 @@ mov dl, 0
 mov dword[pointer], input_string
 add dword[pointer], 2
 mov dword[counter], 2
-
+; input: "742"          ; 00000010
 bit_loop:
     mov esi, dword [pointer]
     mov bl, byte [esi]         ; bl points to the current character in the input.
@@ -167,8 +163,9 @@ construct_new_link:
     mov dl, dh
     mov dh, 0               ; Needs to be.
     cmp cl, 8
+    jnz next1
     mov cl, 0
-    
+next1:
     jmp bit_loop
     cmp cl, 9
     mov cl, 1
@@ -184,7 +181,7 @@ mov esi, dword [current_link_ptr]
 dec esi
 mov dx, 0
 mov dx, [esi]
-push dx
+push word dx
 push temp2
 call printf
 add esp, 12
