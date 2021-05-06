@@ -17,19 +17,23 @@
 section	.rodata
 %%Str2:	db	%2 , 10, 0
 section	.text
+    pushad
 	push	%1
 	push	%%Str2
 	call	printf
 	add	esp, STK_UNIT*2
+    popad
 %endmacro
 
 %macro	my_printf1	1
 section	.rodata
     %%Str2:	db	%1 , 10, 0
 section	.text
+    pushad
 	push	%%Str2
 	call	printf
 	add	esp, STK_UNIT*1
+    popad
 %endmacro
 
 %macro fgets_ass 0
@@ -51,17 +55,17 @@ section	.text
 %macro update_linkedlist 0
     mov byte [eax], dl         ; insert dl byte in the first byte in new link   
     cmp dword[current_link_ptr], 0
-    jnz not_zero
+    jnz %%not_zero
     mov dword [current_link_ptr], eax
     inc dword [current_link_ptr]
-    jmp end
+    jmp %%end
 
-not_zero:
+%%not_zero:
     mov esi, dword [current_link_ptr]               ; esi is now a ptr to the latest updated link (with offset 1)
     mov dword [esi], eax                            ; old link point to the begginig of new link
     inc esi                                         ; old link point to the second byte in new link 
     mov dword [current_link_ptr], esi               ; current_link_ptr point to second byte in new link
-end:
+%%end:
 %endmacro
 
 
@@ -109,7 +113,7 @@ mycalc:
     my_printf1 "calc:"           ; print "calc:".
 
 section .data               ; Initialized data.
-    input_string: db "753",0
+    input_string: db "7545",0               
     temp: dw 0
     counter: dd 0
 section .bss
@@ -132,9 +136,9 @@ mov byte[first_char], dl
 mov dl, 0
 
 mov dword[pointer], input_string
-add dword[pointer], 2
-mov dword[counter], 2
-; input: "742"          ; 00000010
+add dword[pointer], 4
+mov dword[counter], 4
+
 bit_loop:
     mov esi, dword [pointer]
     mov bl, byte [esi]         ; bl points to the current character in the input.
@@ -147,53 +151,58 @@ bit_loop:
     dec dword[pointer]
 
     cmp dword [counter], 0
-    jz print_dx_test            ; jmp from loop when counter = 0.
+    jz end_loop                ; jmp from loop when counter = 0.
     dec dword [counter]
 
     cmp cl, 8                  ; Check if we have 8 bits already.
     jl bit_loop                ; If cl<8 -> do the loop again.
 
 
-print_dx_test:
 construct_new_link: 
     create_new_link
     update_linkedlist
-    ; Need to initialize cl again, with the number of bits that are in ah when we get here.
-    
+
     mov dl, dh
     mov dh, 0               ; Needs to be.
     cmp cl, 8
     jnz next1
     mov cl, 0
-next1:
     jmp bit_loop
+    
+next1:
     cmp cl, 9
+    jnz next2
     mov cl, 1
     jmp bit_loop
-    cmp cl, 10
+
+next2:
     mov cl, 2
     jmp bit_loop
 
 
 
 
-mov esi, dword [current_link_ptr]
-dec esi
-mov dx, 0
-mov dx, [esi]
-push word dx
-push temp2
-call printf
-add esp, 12
+
+
+end_loop:                               ; We arrive here after reading all the input number.
+    create_new_link
+    update_linkedlist
 
 
 
-;print_dx_test:
-;    and dx, 0xFF
-;    push dx
-;    push temp2
-;    call printf
-;    add esp, 8
+    mov esi, dword [current_link_ptr]
+    dec esi
+    mov edx, 0
+    mov dl, byte[esi]
+    pushad
+    push edx
+    push temp2
+    call printf
+    add esp, 12
+    popad
+
+    ; 111101100101 = 7545 -> 101 In first link data, 15 in second
+    
 
     endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.
 
@@ -209,8 +218,7 @@ end_of_program:                            ; End the program.
 
 
 ;            fgets_ass                               ; stdio function fgets, put in buffer the wanted data
-;            mov edx, buffer                         ; pointer to buffer
-
+;            mov edx, buffer                         ; pointer to buffer;
 ;            mov ecx, -1
 ;        loop:
 ;            mov esi, buffer
@@ -218,37 +226,9 @@ end_of_program:                            ; End the program.
 ;            cmp byte[esi + ecx], 10
 ;            jnz loop
 ;            dec ecx
-;        add esi, ecx
-
+;        add esi, ecx;
 ;        mov dword[pointer], esi                 ; pointer to the msb of the input.
 ;        mov dword[counter], ecx                 ; Holds the amount of numbers in the input.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -265,8 +245,7 @@ end_of_program:                            ; End the program.
 ;    mov ebx, 0                              ; counter for byte index
 ;    mov al, byte [buffer + ebx]             ; set al as first buffer's byte
 ;    cmp al, 10                              ; check if empty(only NL was sent)
-;    jz loop
-
+;    jz loop;
 ;    cmp al, 57        
 ;    jg lexical_commands
 ;    cmp al, 48
@@ -278,17 +257,13 @@ end_of_program:                            ; End the program.
 ;        mov al, byte [buffer + ebx]                 
 ;        cmp al, 10                                  
 ;        jnz numbers                               
-;jmp loop
-
-
+;jmp loop;
 ;    print_dx_test:
 ;        ;and dx, 0xFF
 ;        push dx
 ;        push temp2
 ;        call printf
-;        add esp, 8
-
-
+;        add esp, 8;
 
 
 
