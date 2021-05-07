@@ -45,11 +45,13 @@ section	.text
 %endmacro
 
 %macro create_new_link 0
+    push ecx
     mov word[temp], dx
     push dword 5
     call malloc
     add esp, STK_UNIT * 1
     mov dx, word[temp]
+    pop ecx
 %endmacro
 
 %macro update_linkedlist 0
@@ -199,9 +201,9 @@ end_loop:                               ; We arrive here after reading all the i
     add esp, 12
     popad
 
-    
 
-    ; 1111010101100101 = 7545 -> 101 In first link data, 245 in second
+
+    ; 111101100101 = 7545 -> 101 In first link data, 15 in second
     
 
     endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.
