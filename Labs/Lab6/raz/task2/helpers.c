@@ -11,6 +11,7 @@
 #define TERMINATED  -1
 #define RUNNING 1
 #define SUSPENDED 0
+#define arrSize 10
 typedef struct process{
     cmdLine* cmd;                         /* the parsed command line*/
     pid_t pid; 		                  /* the process id that is running the command*/
@@ -19,6 +20,8 @@ typedef struct process{
 } process;
 int debug_mode;
 process* processList;
+char** history_arr[10];
+int hist_arr_size = 0;
 
 char* toStatus(int status){
     switch(status)
@@ -175,6 +178,12 @@ void redirect(cmdLine* pCmdLine){
     }
 }
 
+int contains_pipe(cmdLine *pCmdLine){
+    if (pCmdLine->next != NULL)
+        return 1;
+    return -1;
+}
+
 void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' command are done from the main-process.
     char path[PATH_MAX];
     getcwd(path, PATH_MAX);
@@ -182,6 +191,13 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
     strcat(path, pCmdLine->arguments[0]);
     
     if (strcmp(pCmdLine->arguments[0], "cd") == 0){
+//        if (hist_arr_size == 10)
+//           history_arr[]
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
+        }
+
         char* newPath = pCmdLine->arguments[1];
         int a = chdir(newPath);
         if (a == -1){
@@ -190,9 +206,15 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         char path2[PATH_MAX];
         getcwd(path2, PATH_MAX);
         printf("current directory: %s\n", path2);       // Print the current directory.
+
         freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0], "proc") == 0){
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
+        }
+
         if (processList == NULL)
             printf("List empty\n");
         else{
@@ -201,6 +223,16 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "free") == 0){
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
+        }
+
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
+        }
+
         if (processList == NULL)
             printf("List empty\n");
         else{
@@ -209,17 +241,92 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "suspend") == 0){
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
+        }
+
         if (contains_pid(processList, atoi(pCmdLine->arguments[1])) != -1){
             suspend(pCmdLine);
             freeCmdLines(pCmdLine);
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "kill") == 0){
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size = hist_arr_size + 1;
+        }
+
         if (contains_pid(processList, atoi(pCmdLine->arguments[1])) != -1){
             pid_t a = (pid_t)atoi(pCmdLine->arguments[1]);
             updateProcessStatus(processList, a, TERMINATED);
             int cond = kill(a, SIGINT);
             freeCmdLines(pCmdLine);
+        }
+    }
+    else if(strcmp(pCmdLine->arguments[0], "history") == 0){
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
+        }
+
+        print_hist();
+        freeCmdLines(pCmdLine);        
+    }
+    else if (contains_pipe(pCmdLine) > 0) {
+        // This one is a bit tricky. Maybe add to it later.
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
+        }
+
+
+        //const char** args = pCmdLine->arguments;
+        //const char** args2 = pCmdLine->next->arguments;
+
+        cmdLine* nextCommand = pCmdLine->next;
+        pCmdLine->next = NULL;
+
+        int pipefd[2];
+        pipe(pipefd);
+        int pid = fork();
+        if (pid == 0){                              // Child_1 process.
+            close(STDOUT_FILENO);
+            dup(pipefd[1]);
+            close(pipefd[1]);
+            // execute "ls -l".
+            execute(pCmdLine);
+            exit(0);
+            /*
+            if (execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0){
+                fprintf(stderr, "executing ls has failed.\n");
+                exit(0);
+            }
+            */
+        }
+        else{                                       // Main process.
+            close(pipefd[1]);
+            int pid_2 = fork();
+            if (pid_2 == 0){                        // Child_2 process.
+                close(STDIN_FILENO);
+                dup(pipefd[0]);
+                close(pipefd[0]);
+                // execute "tail -n 2".
+                execute(nextCommand);
+                exit(0);
+                /*
+                if (execvp(pCmdLine->next->arguments[0], pCmdLine->next->arguments) < 0){
+                    fprintf(stderr, "executing tail has failed.\n");
+                    exit(0);
+                }
+                */
+            }
+            else{                                   // Main process.
+                int a, b;
+                close(pipefd[0]);
+                waitpid(pid, &a, 0777);
+                waitpid(pid_2, &b, 0777);        
+            }      
         }
     }
     /*
@@ -232,15 +339,11 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
     }
     */
     else{
-        /*
-        int pipe_fd[2];
-        if (pCmdLine->inputRedirect != NULL | pCmdLine->inputRedirect != NULL){
-            if (pipe(pipe_fd) == -1) {
-                perror("pipe");
-                exit(EXIT_FAILURE);
-            } 
+        if (hist_arr_size < arrSize){
+            history_arr[hist_arr_size] = pCmdLine->arguments;
+            hist_arr_size++;
         }
-        */
+
         int i = fork();
 
         if (pCmdLine->blocking == 1){
@@ -249,7 +352,7 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         }
         if (i == 0){      
 
-            if (pCmdLine->inputRedirect != NULL | pCmdLine->inputRedirect != NULL){
+            if (pCmdLine->inputRedirect != NULL | pCmdLine->outputRedirect != NULL){
                 redirect(pCmdLine);
             }
 
@@ -271,8 +374,29 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         }
         fprintf(stderr, "\n");
     }
-    //freeCmdLines(pCmdLine);
 }
+
+// char** history[10]
+void print_hist(){
+    for (int i = 0; i < hist_arr_size; i++){
+        for (int j = 0; j < sizeof(history_arr[i])/4; j++){
+            printf("%s", history_arr[i][j]);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

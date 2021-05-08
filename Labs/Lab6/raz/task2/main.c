@@ -18,6 +18,9 @@ int debug_mode = 0;
 void execute(cmdLine* pCmdLine);
 void freeProcessList(process* process_list);
 process* processList = NULL;
+void print_hist();
+char** history_arr[10];
+int hist_arr_size = 0;
 
 int main(int argc, char* argv[]){
     //processList = NULL;
