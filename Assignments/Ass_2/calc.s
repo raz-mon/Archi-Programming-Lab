@@ -187,21 +187,6 @@ end_loop:                               ; We arrive here after reading all the i
     create_new_link
     update_linkedlist
 
-<<<<<<< HEAD
-=======
-
-
-    mov esi, dword [current_link_ptr]
-    dec esi
-    mov edx, 0
-    mov dl, byte[esi]
-    pushad
-    push edx
-    push temp2
-    call printf
-    add esp, 12
-    popad
->>>>>>> f8d5195997a1e3a6df8c67efccb9e8ae521afc8e
 
 
     mov esi, dword [current_link_ptr]
@@ -215,13 +200,19 @@ end_loop:                               ; We arrive here after reading all the i
     add esp, 12
     popad
 
-<<<<<<< HEAD
-    
 
-    ; 1111010101100101 = 7545 -> 101 In first link data, 245 in second
-=======
+    mov esi, dword [current_link_ptr]
+    dec esi
+    mov edx, 0
+    mov dl, byte[esi]
+    pushad
+    push edx
+    push temp2
+    call printf
+    add esp, 12
+    popad
+
     ; 111101100101 = 7545 -> 101 In first link data, 15 in second
->>>>>>> f8d5195997a1e3a6df8c67efccb9e8ae521afc8e
     
 
     endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.

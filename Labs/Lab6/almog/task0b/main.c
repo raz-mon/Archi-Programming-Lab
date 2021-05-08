@@ -61,13 +61,6 @@ int main(int argc, char * argv[]){
     }else
     {
         while(1){
-
-
-
-            //printf("CURRENT PID: %d\n" , getpid());
-
-
-
             char input[2048];
             fgets(input,2048,stdin);
             cmdLine * CL = parseCmdLines(input);
@@ -105,17 +98,23 @@ void execute(cmdLine * pCmdLine){
         freeCmdLines(pCmdLine);
     }
     else{
-        //char * fullName = fullDes(pCmdLine->arguments[0]);
+
         int i = fork();
         if(i == 0){
+            if(pCmdLine->inputRedirect != NULL){
+               close(STDIN_FILENO);
+               fopen(pCmdLine->inputRedirect, "r");
+            }
+            if(pCmdLine->outputRedirect != NULL){
+                close(STDOUT_FILENO);
+                fopen(pCmdLine->outputRedirect, "w+");
+            }
             if(execvp(pCmdLine->arguments[0] , pCmdLine->arguments) < 0){
                 perror("Fault");
-                //free(fullName);
                 freeCmdLines(pCmdLine);
                 freeProcessList(global_proc);
                 exit(EXIT_FAILURE);
             }
-        //free(fullName);
         }
         addProcess(&global_proc , pCmdLine , i);
     }
@@ -145,12 +144,18 @@ void execute_D(cmdLine * pCmdLine){
         freeCmdLines(pCmdLine);
     }
     else{
-        //char * fullName = fullDes(pCmdLine->arguments[0]);
         int i = fork();
         if(i == 0){
+            if(pCmdLine->inputRedirect != NULL){
+               close(STDIN_FILENO);
+               fopen(pCmdLine->inputRedirect, "r");
+            }
+            if(pCmdLine->outputRedirect != NULL){
+                close(STDOUT_FILENO);
+                fopen(pCmdLine->outputRedirect, "w+");
+            }
             if(execvp(pCmdLine->arguments[0] , pCmdLine->arguments) < 0){
                 perror("Fault");
-                //free(fullName);
                 freeCmdLines(pCmdLine);
                 freeProcessList(global_proc);
                 exit(EXIT_FAILURE);
@@ -162,7 +167,6 @@ void execute_D(cmdLine * pCmdLine){
                 printf(" %s" , pCmdLine->arguments[j]);
             printf("\n");
         }
-        //free(fullName);
     }
 }
 
@@ -358,7 +362,6 @@ void kill_proc(cmdLine * pCmdLine){
     {
         int cond = kill(pid, SIGINT);
         if(cond != 0){ perror("Cannot complete command"); return; }
-        //updateProcessStatus(global_proc, pid, TERMINATED);
     }
 }
 
