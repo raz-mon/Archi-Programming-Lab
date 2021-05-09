@@ -18,9 +18,10 @@ typedef struct process{
     int status;                           /* status of the process: RUNNING/SUSPENDED/TERMINATED */
     struct process *next;	                  /* next process in chain */
 } process;
+void print_hist();
 int debug_mode;
 process* processList;
-char** history_arr[10];
+char* history_arr[10];
 int hist_arr_size = 0;
 
 char* toStatus(int status){
@@ -37,6 +38,31 @@ char* toStatus(int status){
         break;
     }
 }
+/*
+char** clone_arguments(chr* consat* arguments){
+    char** res = (char**)malloc(sizeof(arguments));
+    for (int i = 0; i < sizeof(arguments)/4; i++){
+        res[i] = (char*)malloc(sizeof(arguments[i]));
+        strcpy(res[i], arguments[i]);
+    }
+}
+*/
+/*
+char** clone_arguments(cmdLine* pcmdLine){
+
+    char** res = strdup(pcmdLine->arguments);
+
+    //printf("argCount: %d\n", pcmdLine->argCount);
+    
+    char** res = (char**)malloc((pcmdLine->argCount)*4);
+    for (int i = 0; i < pcmdLine->argCount; i++){
+        res[i] = (char*)malloc(256);
+        strcpy(res[i], pcmdLine->arguments[i]);
+    }
+    
+    return res;
+}
+*/
 
 void freeProcessList(process* process_list){
     freeCmdLines(process_list->cmd);
@@ -191,12 +217,12 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
     strcat(path, pCmdLine->arguments[0]);
     
     if (strcmp(pCmdLine->arguments[0], "cd") == 0){
-//        if (hist_arr_size == 10)
-//           history_arr[]
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size++;
         }
+        */        
 
         char* newPath = pCmdLine->arguments[1];
         int a = chdir(newPath);
@@ -210,11 +236,12 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         freeCmdLines(pCmdLine);
     }
     else if(strcmp(pCmdLine->arguments[0], "proc") == 0){
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size++;
         }
-
+        */
         if (processList == NULL)
             printf("List empty\n");
         else{
@@ -223,15 +250,13 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "free") == 0){
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size++;
         }
-
-        if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
-            hist_arr_size++;
-        }
+        */
+        
 
         if (processList == NULL)
             printf("List empty\n");
@@ -241,22 +266,24 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "suspend") == 0){
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size++;
         }
-
+        */
         if (contains_pid(processList, atoi(pCmdLine->arguments[1])) != -1){
             suspend(pCmdLine);
             freeCmdLines(pCmdLine);
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "kill") == 0){
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size = hist_arr_size + 1;
         }
-
+        */
         if (contains_pid(processList, atoi(pCmdLine->arguments[1])) != -1){
             pid_t a = (pid_t)atoi(pCmdLine->arguments[1]);
             updateProcessStatus(processList, a, TERMINATED);
@@ -265,20 +292,31 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
         }
     }
     else if(strcmp(pCmdLine->arguments[0], "history") == 0){
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size++;
         }
-
+        */
         print_hist();
         freeCmdLines(pCmdLine);        
     }
     else if (contains_pipe(pCmdLine) > 0) {
         // This one is a bit tricky. Maybe add to it later.
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size++;
         }
+        */
+       /*
+        cmdLine* temp = pCmdLine;
+        while(temp->next != NULL){
+            temp = pCmdLine->next;
+            history_arr[hist_arr_size] = clone_arguments(temp);
+            hist_arr_size++;
+        }
+        */
 
 
         //const char** args = pCmdLine->arguments;
@@ -339,10 +377,12 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
     }
     */
     else{
+        /*
         if (hist_arr_size < arrSize){
-            history_arr[hist_arr_size] = pCmdLine->arguments;
+            history_arr[hist_arr_size] = clone_arguments(pCmdLine);
             hist_arr_size++;
         }
+        */
 
         int i = fork();
 
@@ -376,14 +416,29 @@ void execute(cmdLine* pCmdLine){        // In this execute, the 'cd', 'proc' com
     }
 }
 
+void print_hist(){
+    int flag;
+    if (hist_arr_size > 9)
+        flag = 10;
+    else
+        flag = hist_arr_size;
+    for (int i = 0; i < flag; i++){
+        printf("%s", history_arr[i]);
+        
+    }
+}
+
+/*
 // char** history[10]
 void print_hist(){
     for (int i = 0; i < hist_arr_size; i++){
-        for (int j = 0; j < sizeof(history_arr[i])/4; j++){
-            printf("%s", history_arr[i][j]);
+        for (int j = 0; j < strlen(history_arr[i])/4; j++){
+            printf("%s ", history_arr[i][j]);
         }
+        printf("\n");
     }
 }
+*/
 
 
 
