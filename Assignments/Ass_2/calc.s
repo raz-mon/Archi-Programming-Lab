@@ -1,3 +1,4 @@
+
 %define STK_UNIT 4
 
 %macro startFunc 1
@@ -189,34 +190,6 @@ end_loop:                               ; We arrive here after reading all the i
 
 
 
-<<<<<<< HEAD
-;        mov dl, byte [pointer_to_number_string]
-;    sub dl, 48
-;    mov byte[first_char], dl
-;    mov edx, pointer_to_number_string
-;    add edx, 1                      ; bl will point to the end of the input number. 
-;
-;    bit_loop:            
-;        mov bl, byte [edx]         ; bl points to the current character in the input.
-;        sub bl, 48                 ; get number-value of the input char (binary representation).
-;
-;        push bx
-;        push temp2
-;        call printf
-;        add esp, 6
-;
-;        shl bl, cl                 ; Put the bits in the right place before adding to ax.
-;        add cl, 3
-;        add ax, bx                 ; Add bits to the representation.
-;
-;        dec edx
-;        
-;        cmp bl, [first_char]        ; Check if there are any numbers left to read in the input.
-;        jz end_of_program           ; If not, finish the loop. 
-;
-;        cmp cl, 8                  ; Check if we have 8 bits already.
-;        jl bit_loop                ; If cl<8 -> do the loop again.
-=======
     mov esi, dword [current_link_ptr]
     dec esi
     mov edx, 0
@@ -295,7 +268,6 @@ end_of_program:                            ; End the program.
 ;        add esp, 8;
 
 
->>>>>>> c228b7344a5bcb7f7517524eada34dea602b0a64
 
 
 
@@ -306,21 +278,6 @@ end_of_program:                            ; End the program.
 
 
 
-<<<<<<< HEAD
-
-    ; Old code.
-    ;allocate the operand-stack (default size)
-    ;push dword 20
-    ;call malloc
-    ;add esp, 4
-    ;operand_stack: %1num dd 0
-
-
-    ;Testing the allocated memory:
-    ;mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
-    ;mov ebx, dword [eax+STK_UNIT*3]
-    ;my_printf2 ebx, "The number is: %ld"
-=======
 ;    bit_loop:
 ;        mov esi, dword [pointer]
 ;        mov bl, byte [esi]         ; bl points to the current character in the input.
@@ -339,5 +296,4 @@ end_of_program:                            ; End the program.
   ;      cmp cl, 8                  ; Check if we have 8 bits already.
    ;     jl bit_loop                ; If cl<8 -> do the loop again.
 
->>>>>>> c228b7344a5bcb7f7517524eada34dea602b0a64
 
