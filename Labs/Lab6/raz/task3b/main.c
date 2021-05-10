@@ -19,9 +19,11 @@ int debug_mode = 0;
 void execute(cmdLine* pCmdLine);
 void freeProcessList(process* process_list);
 process* processList = NULL;
-char** history_arr[10];
+char* history_arr[10];
 char** clone_arguments(cmdLine* pcmdLine);
 int hist_arr_size;
+void addHist(char* line);
+void freeHist();
 
 
 int main(int argc, char* argv[]){
@@ -39,26 +41,15 @@ int main(int argc, char* argv[]){
     fgets(line, 2048, stdin);
 
     // Add the command to history.
-    if (hist_arr_size < arrSize){
-        char* temp = strdup(line);
-        history_arr[hist_arr_size] = temp;
-        hist_arr_size++;
-    }
-    else
-    {
-        char* temp = strdup(line);
-        free(history_arr[hist_arr_size % 10]);
-        history_arr[hist_arr_size % 10] = temp;
-        hist_arr_size++;
-    }
+    addHist(line);
     
-        
-
+    
     //parseCmdLines
     cmdLine* pCmdLine = parseCmdLines(line);
     if (strcmp(pCmdLine->arguments[0], "quit") == 0){
         freeProcessList(processList);
         freeCmdLines(pCmdLine);
+        freeHist();
         exit(0);
     }
         
@@ -71,5 +62,24 @@ int main(int argc, char* argv[]){
 }
 
 
+
+
+
+
+
+void addHist(char* line){
+    if (hist_arr_size < arrSize){
+        char* temp = strdup(line);
+        history_arr[hist_arr_size] = temp;
+        hist_arr_size++;
+    }
+    else
+    {
+        char* temp = strdup(line);
+        free(history_arr[hist_arr_size % 10]);
+        history_arr[hist_arr_size % 10] = temp;
+        hist_arr_size++;
+    }
+}
 
 

@@ -51,6 +51,7 @@ pid_t findPid(process *process_list , pid_t pid);
 void pipeImpl(cmdLine * pCmdLine);
 void addHistory(const char * s);
 void printHist();
+void freeHistory();
 
 int main(int argc, char * argv[]){
     global_proc = NULL;
@@ -78,7 +79,8 @@ int main(int argc, char * argv[]){
             cmdLine * CL = parseCmdLines(input);
             if(CL->argCount ==1 && strcmp("quit" , CL->arguments[0]) == 0){
                 freeCmdLines(CL);
-                freeProcessList(global_proc);
+                if(global_proc != NULL){ freeProcessList(global_proc);}
+                freeHistory();
                 break;
             }
             execute(CL);
@@ -136,11 +138,13 @@ void execute(cmdLine * pCmdLine){
                 if(execvp(pCmdLine->arguments[0] , pCmdLine->arguments) < 0){
                     perror("Fault");
                     freeCmdLines(pCmdLine);
-                    freeProcessList(global_proc);
+                    if(global_proc != NULL){ freeProcessList(global_proc);}
+                    freeHistory();
                     exit(EXIT_FAILURE);
                 }
             }
             addProcess(&global_proc , pCmdLine , i);
+            freeCmdLines(pCmdLine);
         }
     }
 }
@@ -189,7 +193,8 @@ void execute_D(cmdLine * pCmdLine){
                 if(execvp(pCmdLine->arguments[0] , pCmdLine->arguments) < 0){
                     perror("Fault");
                     freeCmdLines(pCmdLine);
-                    freeProcessList(global_proc);
+                    if(global_proc != NULL){ freeProcessList(global_proc); }
+                    freeHistory();
                     exit(EXIT_FAILURE);
                 }
             }else{
@@ -199,6 +204,7 @@ void execute_D(cmdLine * pCmdLine){
                     printf(" %s" , pCmdLine->arguments[j]);
                 printf("\n");
             addProcess(&global_proc , pCmdLine , i);
+            freeCmdLines(pCmdLine);
             }
         }
     }
@@ -374,14 +380,17 @@ void suspend(cmdLine * pCmdLine){
     if(i == 0){
         if(pCmdLine->argCount != 3 || findPid(global_proc , pid)  == -1){
             perror("Fault: wrong arguments");
+            freeProcessList(global_proc);
+            freeHistory();
             exit(EXIT_FAILURE);
         }else{
             int cond = kill(pid, SIGTSTP);
-            if(cond != 0){ perror("Cannot complete command"); exit(EXIT_FAILURE); return; }
+            if(cond != 0){ perror("Cannot complete command"); freeHistory(); exit(EXIT_FAILURE); return; }
             sleep(atoi(pCmdLine->arguments[2]));
             kill(pid, SIGCONT);
-            if(cond != 0){ perror("Cannot complete command"); exit(EXIT_FAILURE); return; }
+            if(cond != 0){ perror("Cannot complete command"); freeHistory(); exit(EXIT_FAILURE); return; }
             freeProcessList(global_proc);
+            freeHistory();
             exit(EXIT_SUCCESS);
         }
     }
@@ -419,6 +428,9 @@ void pipeImpl(cmdLine * pCmdLine){
         dup(pipefd[1]);
         close(pipefd[1]);
         execute(pCmdLine);
+        freeCmdLines(nextCmd);
+        freeHistory();
+        freeProcessList(global_proc);
         _exit(EXIT_SUCCESS);
     }
     else{                                       // Main process.
@@ -429,6 +441,9 @@ void pipeImpl(cmdLine * pCmdLine){
             dup(pipefd[0]);
             close(pipefd[0]);
             execute(nextCmd);
+            freeCmdLines(pCmdLine);
+            if(global_proc != NULL){ freeProcessList(global_proc);}
+            freeHistory();
             _exit(EXIT_SUCCESS);
         }
         int a, b;
@@ -452,6 +467,18 @@ void printHist(){
     }else{
         for(int i = 0; i < hist_counter; i++){
             printf("%s" , history_arr[i]);
+        }
+    }
+}
+
+void freeHistory(){
+    if(hist_counter < 10){
+        for(int i = 0; i < hist_counter; i++){
+            free(history_arr[hist_counter]);
+        }
+    }else{
+        for(int i = 0; i < 10; i++){
+            free(history_arr[hist_counter]);
         }
     }
 }
