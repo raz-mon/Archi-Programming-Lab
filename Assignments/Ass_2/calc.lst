@@ -1,0 +1,220 @@
+     1                                  
+     2                                  %define STK_UNIT 4
+     3                                  
+     4                                  %macro startFunc 1
+     5                                      push ebp
+     6                                      mov ebp, esp
+     7                                      sub esp, %1
+     8                                  %endmacro
+     9                                  
+    10                                  %macro endFunc 0
+    11                                      mov esp, ebp                ; "release" the activation frame.
+    12                                      pop ebp                     ; restore activation frame of main.
+    13                                      ret                         ; return from the function.
+    14                                  %endmacro
+    15                                  
+    16                                  %macro fgets_ass 0
+    17                                      push dword [stdin]              ;path to file(stdin)
+    18                                      push dword 80                   ;max lenght
+    19                                      push dword buffer               ;input buffer
+    20                                      call fgets
+    21                                      add esp, STK_UNIT*3                     
+    22                                  %endmacro
+    23                                  
+    24                                  
+    25                                  %macro	my_printf2	2
+    26                                  section	.rodata
+    27                                  %%Str2:	db	%2 , 10, 0
+    28                                  section	.text
+    29                                  	push	%1
+    30                                  	push	%%Str2
+    31                                  	call	printf
+    32                                  	add	esp, STK_UNIT*2
+    33                                  %endmacro
+    34                                  
+    35                                  %macro	my_printf1	1
+    36                                  section	.rodata
+    37                                      %%Str2:	db	%1 , 10, 0
+    38                                  section	.text
+    39                                  	push	%%Str2
+    40                                  	call	printf
+    41                                  	add	esp, STK_UNIT*1
+    42                                  %endmacro
+    43                                  
+    44                                  
+    45                                  
+    46                                  section .bss                ; Uninitialized data.
+    47 00000000 <res 000000FC>              operand_stack: resd 63                              ; Remember to save what is the size is from the user.
+    48 000000FC <res 00000050>              buffer:        resb 80                              ; max size - input line
+    49                                  
+    50                                  section .data               ; Initialized data.
+    51                                  
+    52                                  section .rodata             ; Read-only data.
+    53 00000000 63616C633A200A00            initial_print: db "calc: ",10,0
+    54                                  
+    55                                  section .text               ; executable instructions of a program
+    56                                    align 16
+    57                                    global main
+    58                                    extern printf
+    59                                    extern fprintf 
+    60                                    extern fflush
+    61                                    extern malloc 
+    62                                    extern calloc 
+    63                                    extern free 
+    64                                    ;extern gets 
+    65                                    extern getchar 
+    66                                    extern fgets 
+    67                                    extern stdout
+    68                                    extern stdin
+    69                                    extern stderr
+    70                                  
+    71                                  
+    72                                  main:
+    73 00000000 60                          pushad                      ; Backup registers.
+    74 00000001 9C                          pushfd                      ; ; Backup flags.
+    75                                                                  ; If there are argumrents for mycalc(), push them here.
+    76 00000002 E804000000                  call mycalc
+    77                                  
+    78 00000007 9D                          popfd
+    79 00000008 61                          popad
+    80 00000009 EB77                        jmp end_of_program          ; Just in order not to go through code again.
+    81                                  
+    82                                  
+    83                                  mycalc:
+    84                                      startFunc 5                 ; Macro code will replace this. Defaultly allocetes 5*5 array (5 entrences, each of size 5).
+    84 0000000B 55                  <1>  push ebp
+    84 0000000C 89E5                <1>  mov ebp, esp
+    84 0000000E 83EC05              <1>  sub esp, %1
+    85 00000011 89E1                        mov ecx, esp                ; 
+    86 00000013 83C119                      add ecx, 25                 ; ecx will point at the first cell in the operand stack.
+    87                                  
+    88                                      my_printf1 "calc:"           ; print "calc:".
+    88                              <1> section .rodata
+    88 00000008 63616C633A0A00      <1>  %%Str2: db %1 , 10, 0
+    88                              <1> section .text
+    88 00000016 68[08000000]        <1>  push %%Str2
+    88 0000001B E8(00000000)        <1>  call printf
+    88 00000020 83C404              <1>  add esp, STK_UNIT*1
+    89                                  
+    90                                      ;testing shit:
+    91 00000023 BB0A000000                  mov ebx, 10
+    92                                      my_printf2	ebx, "The number is: %ld"
+    92                              <1> section .rodata
+    92 0000000F 546865206E756D6265- <1> %%Str2: db %2 , 10, 0
+    92 00000018 722069733A20256C64- <1>
+    92 00000021 0A00                <1>
+    92                              <1> section .text
+    92 00000028 53                  <1>  push %1
+    92 00000029 68[0F000000]        <1>  push %%Str2
+    92 0000002E E8(00000000)        <1>  call printf
+    92 00000033 83C408              <1>  add esp, STK_UNIT*2
+    93 00000036 B914000000                  mov ecx, 20
+    94 0000003B 01CB                        add ebx, ecx
+    95                                      my_printf2	ebx, "The number is: %ld"
+    95                              <1> section .rodata
+    95 00000023 546865206E756D6265- <1> %%Str2: db %2 , 10, 0
+    95 0000002C 722069733A20256C64- <1>
+    95 00000035 0A00                <1>
+    95                              <1> section .text
+    95 0000003D 53                  <1>  push %1
+    95 0000003E 68[23000000]        <1>  push %%Str2
+    95 00000043 E8(00000000)        <1>  call printf
+    95 00000048 83C408              <1>  add esp, STK_UNIT*2
+    96                                      
+    97                                      ;allocate the operand-stack (default size)
+    98 0000004B 6A14                        push dword 20
+    99 0000004D E8(00000000)                call malloc
+   100 00000052 83C404                      add esp, 4
+   101                                      
+   102                                      fgets_ass
+   102 00000055 FF35[00000000]      <1>  push dword [stdin]
+   102 0000005B 6A50                <1>  push dword 80
+   102 0000005D 68[FC000000]        <1>  push dword buffer
+   102 00000062 E8(00000000)        <1>  call fgets
+   102 00000067 83C40C              <1>  add esp, STK_UNIT*3
+   103 0000006A 8B1D[FC000000]              mov ebx, [buffer]
+   104                                      my_printf2	ebx, "The number is: %ld"
+   104                              <1> section .rodata
+   104 00000037 546865206E756D6265- <1> %%Str2: db %2 , 10, 0
+   104 00000040 722069733A20256C64- <1>
+   104 00000049 0A00                <1>
+   104                              <1> section .text
+   104 00000070 53                  <1>  push %1
+   104 00000071 68[37000000]        <1>  push %%Str2
+   104 00000076 E8(00000000)        <1>  call printf
+   104 0000007B 83C408              <1>  add esp, STK_UNIT*2
+   105                                  
+   106                                      ;operand_stack: %1num dd 0
+   107                                  
+   108                                  
+   109                                      ;Testing the allocated memory:
+   110                                      ;mov dword [eax+STK_UNIT*3], 12               ; STK_UNIT=4, the size of every link in the operand-stack.
+   111                                      ;mov ebx, dword [eax+STK_UNIT*3]
+   112                                      ;my_printf2 ebx, "The number is: %ld"
+   113                                  
+   114                                  
+   115                                  
+   116                                  
+   117 0000007E 89EC                        mov esp, ebp                ; "release" the activation frame.
+   118 00000080 5D                          pop ebp                     ; restore activation frame of main.
+   119 00000081 C3                          ret                         ; return from the function.
+   120                                      ;endFunc                     ; Macri code will replace with code for exiting a function.
+   121                                  
+   122                                  
+   123                                  end_of_program:                            ; End the program.
+   124                                  
+   125                                  
+   126                                      
+   127                                  
+   128                                  
+   129                                  
+   130                                  
+   131                                  
+   132                                  
+   133                                  
+   134                                  
+   135                                  
+   136                                  
+   137                                  
+   138                                  
+   139                                  
+   140                                  
+   141                                  
+   142                                  
+   143                                  
+   144                                  
+   145                                  
+   146                                  
+   147                                  
+   148                                  
+   149                                  
+   150                                  
+   151                                  
+   152                                  
+   153                                  
+   154                                  
+   155                                  
+   156                                  
+   157                                  
+   158                                  
+   159                                  
+   160                                  
+   161                                  
+   162                                  
+   163                                  
+   164                                  
+   165                                  
+   166                                  
+   167                                  
+   168                                  
+   169                                  
+   170                                  
+   171                                  
+   172                                  
+   173                                  
+   174                                  
+   175                                  
+   176                                  
+   177                                  
+   178                                  
+   179                                  
