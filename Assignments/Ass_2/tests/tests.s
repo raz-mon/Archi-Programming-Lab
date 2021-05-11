@@ -17,7 +17,7 @@
 %endmacro
 
 %macro update_linkedlist 0
-    mov byte [eax], dl         ; insert dl byte in the first byte in new link   
+    mov byte [eax], dl                              ; insert dl byte in the first byte in new link   
     cmp dword[current_link_ptr], 0
     jnz %%not_zero
     mov dword [current_link_ptr], eax
@@ -27,8 +27,8 @@
 %%not_zero:
     mov esi, dword [current_link_ptr]               ; esi is now a ptr to the latest updated link (with offset 1)
     mov dword [esi], eax                            ; old link point to the begginig of new link
-    inc esi                                         ; old link point to the second byte in new link 
-    mov dword [current_link_ptr], esi               ; current_link_ptr point to second byte in new link
+    inc eax                                         ; old link point to the second byte in new link 
+    mov dword [current_link_ptr], eax               ; current_link_ptr point to second byte in new link
 %%end:
 %endmacro
 
@@ -63,6 +63,12 @@ section .rodata             ; read-only data.
 
 section .text               ; text
 main:
+    ; argc in [esp].
+    ; 
+    ;mov esi, [esp]
+    ;cmp esi, 1                 ; If one -> no input from user.
+    ;mov eax, [esp+4]           ; [esp+4] points to argv 
+
     push calc_str
     push PrePrintString
     call printf
@@ -86,22 +92,18 @@ mycalc:
 section .bss
     pointer: resb 4              ; Will be used to point at the input string at different
 section .data               ; Initialized data.
-    input_string: db "465",0              
+    input_string: db "46512345",0              
     temp: dw 0
     counter: dd 0
 section .text
-    
-    ; Start loop that "isolates" the relevant 8 bits.
-    
-    ; Just for the test, we initialize ecx to point at "".
     
 mov dl, byte [input_string]
 sub dl, 48
 mov dl, 0
                                                                         ; 100110101
 mov dword[pointer], input_string
-add dword[pointer], 2
-mov dword[counter], 2
+add dword[pointer], 7
+mov dword[counter], 7
 
 bit_loop:
     mov esi, dword [pointer]
@@ -148,8 +150,7 @@ make_link:
     add esp, 6
     popad
 
-
-
+break1:
 
     mov dl, dh
     mov dh, 0               ; Needs to be.
@@ -194,10 +195,10 @@ end_loop:                               ; We arrive here after reading all the i
 
 
 
-
-
 end_program:
-
+    mov ebx, 0
+    mov eax, 1
+    int 0x80
 
 
 
