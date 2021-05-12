@@ -61,12 +61,13 @@ section	.text
 
 %macro update_linkedlist 0
     pushad
+    mov byte [eax], dl         ; insert dl byte in the first byte in new link
 
-    mov byte [eax], dl         ; insert dl byte in the first byte in new link   
     cmp dword[current_link_ptr], 0
     jnz %%not_zero
     mov dword [current_link_ptr], eax
     inc dword [current_link_ptr]
+    mov [first_link], eax
     jmp %%end
 
 %%not_zero:
@@ -86,6 +87,7 @@ section .bss                ; Uninitialized data.
 
 section .data               ; Initialized data.
     current_link_ptr: dd 0
+    first_link: dd 0
 
 section .rodata             ; Read-only data.
     initial_print: db "calc: ",10,0
@@ -144,14 +146,14 @@ loop:
         cmp bl, 10                              ; check if empty(only NL was sent)
         jnz count_quantity
     dec esi
-    mov [counter], esi
 
     cmp esi, 0
     jz loop
 
     dec esi
     mov bl, byte [buffer + esi]
-    
+    my_printf2	ebx, "The first number is: %d"
+
     cmp bl, 57        
     jg lexical_commands
     cmp bl, 48
@@ -166,9 +168,16 @@ loop:
             add cl, 3
             add dx, bx                 ; Add bits to the representation.
 
+ ;   dec dword[pointer]
+;
+ ;   cmp dword [counter], 0
+ ;   jz end_loop                ; jmp from loop when counter = 0.
+ ;   dec dword [counter]
+
+
             dec esi                                     
             mov bl, byte [buffer + esi]                 
-            cmp esi, 0                                  
+            cmp esi, -1                                  
             jz last_byte
 
             cmp cl, 8
@@ -195,19 +204,32 @@ loop:
                 mov cl, 2
                 jmp bit_loop
 
-            last_byte:
-                shl bx, cl                 ; Put the bits in the right place before adding to ax.
-                add cl, 3
-                add dx, bx                 ; Add bits to the representation.
-                create_new_link
-                update_linkedlist
-                mov dl, dh
-                cmp cl, 8
-                jbe loop
+;            last_byte:
+;                shl bx, cl                 ; Put the bits in the right place before adding to ax.
+;                add cl, 3
+;                add dx, bx                 ; Add bits to the representation.
+;                create_new_link
+;                update_linkedlist
+;                mov dl, dh                    735       111011101       
+;                cmp cl, 8
+;                jbe print_linklist
 
+            last_byte:
                 create_new_link
                 update_linkedlist
-            jmp loop
+            jmp print_linklist
+
+print_linklist:
+    mov ebx, 0
+    mov bl, byte [first_link]
+    my_printf2	ebx, "The first linklist number is: %d"
+
+    mov esi, [first_link + 1]
+    mov ebx, 0
+    mov bl, byte [esi]
+    my_printf2	ebx, "The secound linklist number is: %d"
+
+
 
 mathematical_commands:  
 
