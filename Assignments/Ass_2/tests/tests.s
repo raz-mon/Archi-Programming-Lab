@@ -6,13 +6,11 @@
     popad
     
     push ecx
-    ;mov word[temp], dx
     push edx
     push dword 5
     call malloc
     add esp, 4
     pop edx
-    ;mov dx, word[temp]
     pop ecx
 %endmacro
 
@@ -92,7 +90,7 @@ mycalc:
 section .bss
     pointer: resb 4              ; Will be used to point at the input string at different
 section .data               ; Initialized data.
-    input_string: db "46512345",0              
+    input_string: db "46517654",0              
     temp: dw 0
     counter: dd 0
 section .text
@@ -123,16 +121,6 @@ cont:
     jz end_loop                ; jmp from loop when counter = 0.
     dec dword [counter]
     jmp bit_loop
-
-    ;cmp cl, 8                  ; Check if we have 8 bits already.
-    ;jpl bit_loop                ; If cl<8 -> do the loop again.
-
-    ;pushad
-    ;push dx
-    ;push PrePrintNum
-    ;call printf
-    ;add esp, 6
-    ;popad
 
 make_link:
     create_new_link
@@ -191,8 +179,6 @@ end_loop:                               ; We arrive here after reading all the i
     mov esp, ebp
     pop ebp
     ret
-
-
 
 
 end_program:

@@ -46,11 +46,13 @@ section	.text
 
 %macro create_new_link 0
     push ecx
-    mov word[temp], dx
+    ;mov word[temp], dx
+    push edx
     push dword 5
     call malloc
-    add esp, STK_UNIT * 1
-    mov dx, word[temp]
+    add esp, 4
+    pop edx
+    ;mov dx, word[temp]
     pop ecx
 %endmacro
 
@@ -114,20 +116,22 @@ mycalc:
 
     my_printf1 "calc:"           ; print "calc:".
 
-section .data               ; Initialized data.
-    input_string: db "7545",0               
-    temp: dw 0
-    counter: dd 0
-section .bss
-    first_char: resb 1
-    pointer: resb 4              ; Will be used to point at the input string at different
-section .text
-
     mov ebx, 0                   ; Initialize bx with 0.
     mov eax, 0                   ; Initialize ax with 0.
     mov edx, 0                   ; Initialize dx with 0.
     mov cx,  0                    ; cx will be the index counter of ax.(It is the only one that shl works with..).
     mov ecx, 0
+
+section .bss
+    first_char: resb 1
+    pointer: resb 4              ; Will be used to point at the input string at different
+section .data               ; Initialized data.
+    input_string: db "465",0               
+    temp: dw 0
+    counter: dd 0
+section .text
+
+    
     ; Start loop that "isolates" the relevant 8 bits.
     
     ; Just for the test, we initialize ecx to point at "".
@@ -138,8 +142,8 @@ mov byte[first_char], dl
 mov dl, 0
 
 mov dword[pointer], input_string
-add dword[pointer], 3
-mov dword[counter], 3
+add dword[pointer], 2
+mov dword[counter], 2
 
 bit_loop:
     mov esi, dword [pointer]
@@ -160,7 +164,6 @@ bit_loop:
     jl bit_loop                ; If cl<8 -> do the loop again.
 
 
-construct_new_link: 
     create_new_link
     update_linkedlist
 
@@ -189,7 +192,6 @@ end_loop:                               ; We arrive here after reading all the i
     update_linkedlist
 
 
-
     mov esi, dword [current_link_ptr]
     dec esi
     mov edx, 0
@@ -198,7 +200,7 @@ end_loop:                               ; We arrive here after reading all the i
     push edx
     push temp2
     call printf
-    add esp, 12
+    add esp, 8
     popad
 
 
