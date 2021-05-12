@@ -85,6 +85,7 @@ main:
 
 mycalc:
     startFunc 0                 ; Macro code will replace this. Defaultly allocetes 5*5 array (5 entrences, each of size 5).
+fgets_ass
 
     my_printf1 "calc:"           ; print "calc:".
 
