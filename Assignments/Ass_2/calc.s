@@ -137,6 +137,8 @@ loop:
         ;mov esi, dword [pointer]
         ;mov bl, byte [esi]         ; bl points to the current character in the input.
 
+        
+        
         dec dword [pointer]
 
         cmp cl, 8
