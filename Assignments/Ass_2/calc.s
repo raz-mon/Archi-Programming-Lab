@@ -17,6 +17,7 @@
     jnz %%not_zero
     mov dword [current_link_ptr], eax
     mov dword[first_link], eax
+    pushOperandStack
     inc dword [current_link_ptr]
     jmp %%end
 
@@ -32,21 +33,48 @@
 
 %macro pushOperandStack 0
     pushad                  ; Save all register values.
-    mov eax, dword[stackCounter]        ; eax holds the number of ocupied cells at the operand-stack.
-    ; Move all cells down by one
-    
-;%%loop:
-;    cmp eax, 0
-;    jz end
-;    dec eax        ; eax will hold now the index (operand_stack+4*eax will point the wanted cell) 
-;    mov esi, dword[operand_stack + 4*eax]      ; esi holds the pointer to the link we want to move down in the operand-stack.
-;    inc eax     ; So we can store in the following cell.
-;    mov dword[operand_stack + 4*eax], esi       ; Move the linked-list from the upper cell to the lower.
-;    dec eax
-;    jmp loop        ; If there are more linked-lists of numbers to shift down, do so.
-    ; Add the current link to the operand stack.
+    mov eax, dword[first_link]        ; eax holds the curent link address
+    mov esi, dword[stackCounter]
+    mov dword[operand_stack + esi*4], eax ; Next free spot gets the new link address.
+    inc dword[stackCounter]         ; Increment the stack counter.
+    mov dword[lastInStack], eax     ; Update the "last in stack" pointer.
+    popad                           ; Restore state of the registers.
+%endmacro
 
-%%end
+%macro printOperandStack 0
+    pushad
+    mov eax, dword[stackCounter]
+%%pri_loop:
+    cmp eax, 0
+    jz %%finito
+    dec eax
+    mov ebx, dword[operand_stack + eax*4]
+    pushad
+    push print_next_link_message
+    call printf
+    add esp, 4
+    popad
+    printLink ebx 
+    jmp %%pri_loop
+%%finito:
+    popad
+%endmacro
+
+%macro printLink 1
+    pushad
+%%printLinkLoop:
+    mov edx, 0
+    mov dl, byte[%1]
+    pushad
+    push edx
+    push PrePrintNum
+    call printf
+    add esp, 8
+    popad
+    inc %1
+    cmp dword[%1], 0
+    jnz %%printLinkLoop
+    popad
 %endmacro
 
 %macro fgets_ass 0
@@ -75,6 +103,8 @@ section .text               ; text.
 
 section .bss                ; uninitialized data.
     buffer: resb 81 ; max size - input line , 80 bytes + 1 byte
+    operand_stack: resd 63          ; The program's operand-stack. 63 is it's maximum size.
+
 
 section .data               ; initialized data.
     PrePrintNum: db "number is: %0x", 10, 0
@@ -82,7 +112,11 @@ section .data               ; initialized data.
     ;preFirstLink: db "First Link is: %0x", 10, 0
     calc_str: db "calc:",0
     current_link_ptr: dd 0 
+    lastInStack: dd 0                                           ; This is the "esp" of our operand_stack
     first_link: dd 0   
+    print_next_link_message: db "printing next link", 10, 0
+    stackCounter: dd 0                                          ; Will hold the amount of used cells at the operand-stack.
+
 
 section .rodata             ; read-only data.
 
@@ -113,16 +147,6 @@ mycalc:
     mov edx, 0                   ; Initialize dx with 0.
     mov cx,  0                    ; cx will be the index counter of ax.(It is the only one that shl works with..).
     mov ecx, 0
-
-section .bss
-    pointer: resb 4              ; Will be used to point at the input string at different
-    operand_stack: resd 63          ; The program's operand-stack. 63 is it's maximum size.
-section .data               ; Initialized data.
-    input_string: db "46517654",0              
-    temp: dw 0
-    counter: dd 0
-    stackCounter: dd 0          ; Will hold the amount of used cells at the operand-stack.
-section .text
 
 loop:
     mov dword[current_link_ptr], 0          ; initialize current_link_pointer to 0, so the first link will be recognized.
@@ -174,8 +198,6 @@ loop:
         create_new_link
     updateLL:
         update_linkedlist
-        pushOperandStack                ; Push the created link to the operand-stack.
-        inc dword[stackCounter]         ; increment stack-counter.
         
         ; Print current link
     after_link:
@@ -190,6 +212,9 @@ loop:
         ;call printf
         ;add esp, 6
         ;popad
+
+        ;Print last component of the operand stack
+       
 
     break1:
 
@@ -213,12 +238,26 @@ loop:
 
 
     end_loop:                      ; We arrive here after reading all the input number.
+        ;pushOperandStack                ; Push the created link to the operand-stack.
+
+
         cmp dl, 0
         jz loop
         create_new_link
         update_linkedlist
-        pushOperandStack
-        inc dword[stackCounter]         ; increment stack-counter.
+        
+
+        ;Print last component of the operand stack
+        ;pushad
+        ;mov eax, dword[lastInStack]
+        ;mov edx, 0
+        ;mov dl, byte[eax]
+        ;push edx
+        ;push PrePrintNum
+        ;call printf
+        ;add esp, 8
+        ;popad
+
         
     ; Print the current link's data.
         ;pushad
@@ -230,19 +269,56 @@ loop:
         ;push PrePrintNum
         ;call printf
         ;add esp, 6
-        ;popad
+        ;popad    
 
-    ;print the first link of the recently made linked-list.
-        ;pushad
-        ;mov esi, dword [first_link]
-        ;;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push preFirstLink
-        ;call printf
-        ;add esp, 6
-        ;popad
+        break2:
+            pushad
+                mov eax, dword[stackCounter]
+            pri_loop:
+                cmp eax, 0
+                jz finito
+                dec eax
+                mov ebx, dword[operand_stack + eax*4]
+                pushad
+                push print_next_link_message
+                p1:
+                call printf
+                after_p1:
+                add esp, 4
+                popad
+                    pushad
+                    printLinkLoop:
+                        mov edx, 0
+                        mov dl, byte[ebx]
+                        pushad
+                        push edx
+                        push PrePrintNum
+                        p_2:
+                        call printf
+                        after_p2:
+                        add esp, 8
+                        popad
+                        inc ebx
+                        mov ebx, [ebx]
+                        cmp dword[ebx + 1], 0
+                        jnz printLinkLoop
+                        ;Last byte in link list
+                        mov edx, 0
+                        mov dl, byte[ebx]
+                        pushad
+                        push edx
+                        push PrePrintNum
+                        p_3:
+                        call printf
+                        after_p3:
+                        add esp, 8
+                        popad
+                    popad 
+                jmp pri_loop
+            finito:
+            popad
+
+
 
 
     jmp loop
