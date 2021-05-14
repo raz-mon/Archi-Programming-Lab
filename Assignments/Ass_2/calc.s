@@ -72,8 +72,18 @@
     add esp, 8
     popad
     inc %1
-    cmp dword[%1], 0
+    mov %1, [%1]
+    cmp dword[%1 + 1], 0
     jnz %%printLinkLoop
+        ;Last byte
+        mov edx, 0
+        mov dl, byte[%1]
+        pushad
+        push edx
+        push PrePrintNum
+        call printf
+        add esp, 8
+        popad
     popad
 %endmacro
 
@@ -198,26 +208,7 @@ loop:
         create_new_link
     updateLL:
         update_linkedlist
-        
-        ; Print current link
-    after_link:
-    ; Print the current link's data.
-        ;pushad
-        ;mov esi, dword [current_link_ptr]
-        ;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 6
-        ;popad
-
-        ;Print last component of the operand stack
        
-
-    break1:
-
         mov dl, dh
         mov dh, 0               ; Needs to be.
         cmp cl, 8
@@ -238,87 +229,12 @@ loop:
 
 
     end_loop:                      ; We arrive here after reading all the input number.
-        ;pushOperandStack                ; Push the created link to the operand-stack.
+    cmp dl, 0
+    jz loop
+    create_new_link
+    update_linkedlist  
 
-
-        cmp dl, 0
-        jz loop
-        create_new_link
-        update_linkedlist
-        
-
-        ;Print last component of the operand stack
-        ;pushad
-        ;mov eax, dword[lastInStack]
-        ;mov edx, 0
-        ;mov dl, byte[eax]
-        ;push edx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 8
-        ;popad
-
-        
-    ; Print the current link's data.
-        ;pushad
-        ;mov esi, dword [current_link_ptr]
-        ;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 6
-        ;popad    
-
-        break2:
-            pushad
-                mov eax, dword[stackCounter]
-            pri_loop:
-                cmp eax, 0
-                jz finito
-                dec eax
-                mov ebx, dword[operand_stack + eax*4]
-                pushad
-                push print_next_link_message
-                p1:
-                call printf
-                after_p1:
-                add esp, 4
-                popad
-                    pushad
-                    printLinkLoop:
-                        mov edx, 0
-                        mov dl, byte[ebx]
-                        pushad
-                        push edx
-                        push PrePrintNum
-                        p_2:
-                        call printf
-                        after_p2:
-                        add esp, 8
-                        popad
-                        inc ebx
-                        mov ebx, [ebx]
-                        cmp dword[ebx + 1], 0
-                        jnz printLinkLoop
-                        ;Last byte in link list
-                        mov edx, 0
-                        mov dl, byte[ebx]
-                        pushad
-                        push edx
-                        push PrePrintNum
-                        p_3:
-                        call printf
-                        after_p3:
-                        add esp, 8
-                        popad
-                    popad 
-                jmp pri_loop
-            finito:
-            popad
-
-
+    printOperandStack
 
 
     jmp loop
