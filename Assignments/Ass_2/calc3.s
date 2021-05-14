@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
 %define STK_UNIT 4
 
 %macro startFunc 1
@@ -45,6 +49,7 @@ section	.text
 
 %macro create_new_link 0
     push ecx
+<<<<<<< HEAD
     push esi
     push edx
 
@@ -56,27 +61,48 @@ section	.text
 
     pop edx
     pop esi
+=======
+    ;mov word[temp], dx
+    push edx
+    push dword 5
+    call malloc
+    add esp, 4
+    pop edx
+    ;mov dx, word[temp]
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
     pop ecx
 %endmacro
 
 %macro update_linkedlist 0
+<<<<<<< HEAD
     pushad
     mov byte [eax], dl         ; insert dl byte in the first byte in new link
 
+=======
+    mov byte [eax], dl         ; insert dl byte in the first byte in new link   
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
     cmp dword[current_link_ptr], 0
     jnz %%not_zero
     mov dword [current_link_ptr], eax
     inc dword [current_link_ptr]
+<<<<<<< HEAD
     mov [first_link], eax
+=======
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
     jmp %%end
 
 %%not_zero:
     mov esi, dword [current_link_ptr]               ; esi is now a ptr to the latest updated link (with offset 1)
     mov dword [esi], eax                            ; old link point to the begginig of new link
+<<<<<<< HEAD
     inc eax                                         ; old link point to the second byte in new link 
     mov dword [current_link_ptr], eax               ; current_link_ptr point to second byte in new link
 
     popad
+=======
+    inc esi                                         ; old link point to the second byte in new link 
+    mov dword [current_link_ptr], esi               ; current_link_ptr point to second byte in new link
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
 %%end:
 %endmacro
 
@@ -87,7 +113,10 @@ section .bss                ; Uninitialized data.
 
 section .data               ; Initialized data.
     current_link_ptr: dd 0
+<<<<<<< HEAD
     first_link: dd 0
+=======
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
 
 section .rodata             ; Read-only data.
     initial_print: db "calc: ",10,0
@@ -125,6 +154,7 @@ mycalc:
 
     my_printf1 "calc:"           ; print "calc:".
 
+<<<<<<< HEAD
 section .data               ; Initialized data.
     input_string: db "7545",0               
     temp: dw 0
@@ -234,6 +264,99 @@ print_linklist:
 mathematical_commands:  
 
 lexical_commands:
+=======
+    mov ebx, 0                   ; Initialize bx with 0.
+    mov eax, 0                   ; Initialize ax with 0.
+    mov edx, 0                   ; Initialize dx with 0.
+    mov cx,  0                    ; cx will be the index counter of ax.(It is the only one that shl works with..).
+    mov ecx, 0
+
+section .bss
+    first_char: resb 1
+    pointer: resb 4              ; Will be used to point at the input string at different
+section .data               ; Initialized data.
+    input_string: db "465",0               
+    temp: dw 0
+    counter: dd 0
+section .text
+
+    
+    ; Start loop that "isolates" the relevant 8 bits.
+    
+    ; Just for the test, we initialize ecx to point at "".
+    
+mov dl, byte [input_string]
+sub dl, 48
+mov byte[first_char], dl
+mov dl, 0
+
+mov dword[pointer], input_string
+add dword[pointer], 2
+mov dword[counter], 2
+
+bit_loop:
+    mov esi, dword [pointer]
+    mov bl, byte [esi]         ; bl points to the current character in the input.
+    sub bl, 48                 ; get number-value of the input char (binary representation).
+
+    shl bx, cl                 ; Put the bits in the right place before adding to ax.
+    add cl, 3
+    add dx, bx                 ; Add bits to the representation.
+
+    dec dword[pointer]
+
+    cmp dword [counter], 0
+    jz end_loop                ; jmp from loop when counter = 0.
+    dec dword [counter]
+
+    cmp cl, 8                  ; Check if we have 8 bits already.
+    jl bit_loop                ; If cl<8 -> do the loop again.
+
+
+    create_new_link
+    update_linkedlist
+
+    mov dl, dh
+    mov dh, 0               ; Needs to be.
+    cmp cl, 8
+    jnz next1
+    mov cl, 0
+    jmp bit_loop
+    
+next1:
+    cmp cl, 9
+    jnz next2
+    mov cl, 1
+    jmp bit_loop
+
+next2:
+    mov cl, 2
+    jmp bit_loop
+
+
+
+
+end_loop:                               ; We arrive here after reading all the input number.
+    create_new_link
+    update_linkedlist
+
+
+    mov esi, dword [current_link_ptr]
+    dec esi
+    mov edx, 0
+    mov dl, byte[esi]
+    pushad
+    push edx
+    push temp2
+    call printf
+    add esp, 8
+    popad
+
+
+
+    ; 111101100101 = 7545 -> 101 In first link data, 15 in second
+    
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
 
     endFunc                     ; Macro code will replace with code for exiting a function.                       ; return from the function.
 
@@ -299,6 +422,7 @@ end_of_program:                            ; End the program.
 
 
 
+<<<<<<< HEAD
 ;
  ;   mov ebx, 0                   ; Initialize bx with 0.
  ;   mov eax, 0                   ; Initialize ax with 0.
@@ -383,6 +507,16 @@ end_of_program:                            ; End the program.
 ;
 ;
 ;
+=======
+
+
+
+
+
+
+
+
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573
 ;    bit_loop:
 ;        mov esi, dword [pointer]
 ;        mov bl, byte [esi]         ; bl points to the current character in the input.
@@ -399,4 +533,10 @@ end_of_program:                            ; End the program.
  ;       dec dword [counter]
 
   ;      cmp cl, 8                  ; Check if we have 8 bits already.
+<<<<<<< HEAD
 ;     jl bit_loop                ; If cl<8 -> do the loop again.
+=======
+   ;     jl bit_loop                ; If cl<8 -> do the loop again.
+
+
+>>>>>>> eddbc1549954f8ef3da661b99cb3abb71afdf573

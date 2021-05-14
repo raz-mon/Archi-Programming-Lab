@@ -1,16 +1,11 @@
 %macro create_new_link 0
-    pushad
-    push pt
-    call printf
-    add esp, 4
-    popad
-    
     push ecx
     push edx
     push esi
+    push dword 1
     push dword 5
-    call malloc
-    add esp, 4
+    call calloc
+    add esp, 8
     pop esi
     pop edx
     pop ecx
@@ -21,6 +16,7 @@
     cmp dword[current_link_ptr], 0
     jnz %%not_zero
     mov dword [current_link_ptr], eax
+    mov dword[first_link], eax
     inc dword [current_link_ptr]
     jmp %%end
 
@@ -32,6 +28,25 @@
     mov dword [current_link_ptr], eax               ; current_link_ptr point to second byte in new link
     pop esi
 %%end:
+%endmacro
+
+%macro pushOperandStack 0
+    pushad                  ; Save all register values.
+    mov eax, dword[stackCounter]        ; eax holds the number of ocupied cells at the operand-stack.
+    ; Move all cells down by one
+    
+;%%loop:
+;    cmp eax, 0
+;    jz end
+;    dec eax        ; eax will hold now the index (operand_stack+4*eax will point the wanted cell) 
+;    mov esi, dword[operand_stack + 4*eax]      ; esi holds the pointer to the link we want to move down in the operand-stack.
+;    inc eax     ; So we can store in the following cell.
+;    mov dword[operand_stack + 4*eax], esi       ; Move the linked-list from the upper cell to the lower.
+;    dec eax
+;    jmp loop        ; If there are more linked-lists of numbers to shift down, do so.
+    ; Add the current link to the operand stack.
+
+%%end
 %endmacro
 
 %macro fgets_ass 0
@@ -64,13 +79,12 @@ section .bss                ; uninitialized data.
 section .data               ; initialized data.
     PrePrintNum: db "number is: %0x", 10, 0
     PrePrintString: db "%s", 10, 0
+    ;preFirstLink: db "First Link is: %0x", 10, 0
     calc_str: db "calc:",0
-    current_link_ptr: dd 0
-    pt: db "creating new link",10,0
-    
+    current_link_ptr: dd 0 
+    first_link: dd 0   
 
 section .rodata             ; read-only data.
-
 
 section .text               ; text
 main:
@@ -102,13 +116,16 @@ mycalc:
 
 section .bss
     pointer: resb 4              ; Will be used to point at the input string at different
+    operand_stack: resd 63          ; The program's operand-stack. 63 is it's maximum size.
 section .data               ; Initialized data.
     input_string: db "46517654",0              
     temp: dw 0
     counter: dd 0
+    stackCounter: dd 0          ; Will hold the amount of used cells at the operand-stack.
 section .text
 
 loop:
+    mov dword[current_link_ptr], 0          ; initialize current_link_pointer to 0, so the first link will be recognized.
     fgets_ass                               ; stdio function fgets, put in buffer the wanted data
     mov ebx, 0                              
     mov ecx, 0
@@ -155,22 +172,24 @@ loop:
 
     make_link:
         create_new_link
-    after_create:
+    updateLL:
         update_linkedlist
-
+        pushOperandStack                ; Push the created link to the operand-stack.
+        inc dword[stackCounter]         ; increment stack-counter.
+        
         ; Print current link
     after_link:
-
-        pushad
-        mov esi, dword [current_link_ptr]
-        dec esi
-        mov edx, 0
-        mov dl, byte[esi] 
-        push dx
-        push PrePrintNum
-        call printf
-        add esp, 6
-        popad
+    ; Print the current link's data.
+        ;pushad
+        ;mov esi, dword [current_link_ptr]
+        ;dec esi
+        ;mov edx, 0
+        ;mov dl, byte[esi] 
+        ;push dx
+        ;push PrePrintNum
+        ;call printf
+        ;add esp, 6
+        ;popad
 
     break1:
 
@@ -193,22 +212,39 @@ loop:
 
 
 
-    end_loop:                               ; We arrive here after reading all the input number.
+    end_loop:                      ; We arrive here after reading all the input number.
         cmp dl, 0
         jz loop
         create_new_link
         update_linkedlist
+        pushOperandStack
+        inc dword[stackCounter]         ; increment stack-counter.
+        
+    ; Print the current link's data.
+        ;pushad
+        ;mov esi, dword [current_link_ptr]
+        ;dec esi
+        ;mov edx, 0
+        ;mov dl, byte[esi] 
+        ;push dx
+        ;push PrePrintNum
+        ;call printf
+        ;add esp, 6
+        ;popad
 
-        pushad
-        mov esi, dword [current_link_ptr]
-        dec esi
-        mov edx, 0
-        mov dl, byte[esi] 
-        push dx
-        push PrePrintNum
-        call printf
-        add esp, 6
-        popad
+    ;print the first link of the recently made linked-list.
+        ;pushad
+        ;mov esi, dword [first_link]
+        ;;dec esi
+        ;mov edx, 0
+        ;mov dl, byte[esi] 
+        ;push dx
+        ;push preFirstLink
+        ;call printf
+        ;add esp, 6
+        ;popad
+
+
     jmp loop
 
 mathematical_commands:  
@@ -236,150 +272,4 @@ lexical_commands:
 end_program:
     mov ebx, 0
     mov eax, 1
-    int 0x80
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;loop:
-;    fgets_ass                               ; stdio function fgets, put in buffer the wanted data
-;    mov ebx, 0                              
-;    mov ecx, 0
-;    mov esi, 0                              ; counter for byte index
-;    count_quantity:
-;        mov bl, byte [buffer + esi]                   
-;        inc esi
-;        cmp bl, 10                              ; check if empty(only NL was sent)
-;        jnz count_quantity
-;    dec esi
-;
-;    cmp esi, 0
-;    jz loop
-;
-;    dec esi
-;    mov bl, byte [buffer + esi]
-;    my_printf2	ebx, "The first number is: %d"
-;
-;    cmp bl, 57        
-;    jg lexical_commands
-;    cmp bl, 48
-;    jl mathematical_commands
-;
-;        mov edx, 0
-;        bit_loop:
-;            sub bl, 48
-;            my_printf2	ebx, "The number is: %d"
-;
-;            shl bx, cl                 ; Put the bits in the right place before adding to ax.
-;            add cl, 3
-;            add dx, bx                 ; Add bits to the representation.
-;
-; ;   dec dword[pointer]
-;;
-; ;   cmp dword [counter], 0
-; ;   jz end_loop                ; jmp from loop when counter = 0.
-; ;   dec dword [counter]
-;
-;
-;            dec esi                                     
-;            mov bl, byte [buffer + esi]                 
-;            cmp esi, -1                                  
-;            jz last_byte
-;
-;            cmp cl, 8
-;            jl bit_loop
-;
-;            construct_new_link: 
-;                create_new_link
-;                update_linkedlist
-;
-;            mov dl, dh
-;            mov dh, 0              
-;            cmp cl, 8
-;            jnz next1
-;            mov cl, 0
-;            jmp bit_loop
-;
-;            next1:
-;                cmp cl, 9
-;                jnz next2
-;                mov cl, 1
-;                jmp bit_loop
-;
-;            next2:
-;                mov cl, 2
-;                jmp bit_loop
-;
-;;            last_byte:
-;;                shl bx, cl                 ; Put the bits in the right place before adding to ax.
-;;                add cl, 3
-;;                add dx, bx                 ; Add bits to the representation.
-;;                create_new_link
-;;                update_linkedlist
-;;                mov dl, dh                    735       111011101       
-;;                cmp cl, 8
-;;                jbe print_linklist
-;
-;            last_byte:
-;                create_new_link
-;                update_linkedlist
-;            jmp print_linklist
-;
-;print_linklist:
-;    mov ebx, 0
-;    mov bl, byte [first_link]
-;    my_printf2	ebx, "The first linklist number is: %d"
-;
-;    mov esi, [first_link + 1]
-;    mov ebx, 0
-;    mov bl, byte [esi]
-;    my_printf2	ebx, "The secound linklist number is: %d"
-;
-;mathematical_commands:  
-;
-;lexical_commands:;
+int 0x80
