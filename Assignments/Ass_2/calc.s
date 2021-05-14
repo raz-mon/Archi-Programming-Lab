@@ -32,21 +32,31 @@
 
 %macro pushOperandStack 0
     pushad                  ; Save all register values.
-    mov eax, dword[stackCounter]        ; eax holds the number of ocupied cells at the operand-stack.
-    ; Move all cells down by one
-    
-;%%loop:
-;    cmp eax, 0
-;    jz end
-;    dec eax        ; eax will hold now the index (operand_stack+4*eax will point the wanted cell) 
-;    mov esi, dword[operand_stack + 4*eax]      ; esi holds the pointer to the link we want to move down in the operand-stack.
-;    inc eax     ; So we can store in the following cell.
-;    mov dword[operand_stack + 4*eax], esi       ; Move the linked-list from the upper cell to the lower.
-;    dec eax
-;    jmp loop        ; If there are more linked-lists of numbers to shift down, do so.
-    ; Add the current link to the operand stack.
+    mov eax, dword[current_link_ptr]        ; eax holds the curent link address
+    mov esi, dword[stackCounter]
+    mov dword[operand_stack + esi], eax ; Next free spot gets the new link address.
+    inc dword[stackCounter]         ; Increment the stack counter.
+    mov dword[lastInStack], eax     ; Update the "last in stack" pointer.
+    popad                           ; Restore state of the registers.
+%endmacro
 
-%%end
+%macro printOperandStack 0
+    pushad
+    mov eax, dword[stackCounter]
+%%pri_loop:
+    cmp eax, 0
+    jz %%finito
+    dec eax
+    mov ebx, dword[operand_stack + eax]
+    mov edx, 0
+    mov dl, byte[ebx]      ; assign the data in the link to edx.
+    push edx
+    push PrePrintNum
+    call printf
+    add esp, 8          ; Release memory for the two arguments.  
+    jmp %%pri_loop
+%%finito:
+    popad
 %endmacro
 
 %macro fgets_ass 0
@@ -82,6 +92,7 @@ section .data               ; initialized data.
     ;preFirstLink: db "First Link is: %0x", 10, 0
     calc_str: db "calc:",0
     current_link_ptr: dd 0 
+    lastInStack: dd 0             ; This is the "esp" of our operand_stack
     first_link: dd 0   
 
 section .rodata             ; read-only data.
@@ -243,6 +254,8 @@ loop:
         ;call printf
         ;add esp, 6
         ;popad
+
+        printOperandStack
 
 
     jmp loop
