@@ -17,6 +17,7 @@
     jnz %%not_zero
     mov dword [current_link_ptr], eax
     mov dword[first_link], eax
+    pushOperandStack
     inc dword [current_link_ptr]
     jmp %%end
 
@@ -72,7 +73,10 @@
     popad
     inc %1
     cmp dword[%1], 0
-    jnz %%printLinkLoop
+    jz %%end
+    mov %1, dword[%1]
+    jmp %%printLinkLoop
+%%end:
     popad
 %endmacro
 
@@ -102,6 +106,8 @@ section .text               ; text.
 
 section .bss                ; uninitialized data.
     buffer: resb 81 ; max size - input line , 80 bytes + 1 byte
+    operand_stack: resd 63          ; The program's operand-stack. 63 is it's maximum size.
+
 
 section .data               ; initialized data.
     PrePrintNum: db "number is: %0x", 10, 0
@@ -109,9 +115,11 @@ section .data               ; initialized data.
     ;preFirstLink: db "First Link is: %0x", 10, 0
     calc_str: db "calc:",0
     current_link_ptr: dd 0 
-    lastInStack: dd 0             ; This is the "esp" of our operand_stack
+    lastInStack: dd 0                                           ; This is the "esp" of our operand_stack
     first_link: dd 0   
     print_next_link_message: db "printing next link", 10, 0
+    stackCounter: dd 0                                          ; Will hold the amount of used cells at the operand-stack.
+
 
 section .rodata             ; read-only data.
 
@@ -143,16 +151,6 @@ mycalc:
     mov cx,  0                    ; cx will be the index counter of ax.(It is the only one that shl works with..).
     mov ecx, 0
 
-section .bss
-    pointer: resb 4              ; Will be used to point at the input string at different
-    operand_stack: resd 63          ; The program's operand-stack. 63 is it's maximum size.
-section .data               ; Initialized data.
-    input_string: db "46517654",0              
-    temp: dw 0
-    counter: dd 0
-    stackCounter: dd 0          ; Will hold the amount of used cells at the operand-stack.
-section .text
-
 loop:
     mov dword[current_link_ptr], 0          ; initialize current_link_pointer to 0, so the first link will be recognized.
     fgets_ass                               ; stdio function fgets, put in buffer the wanted data
@@ -168,14 +166,14 @@ loop:
         jnz count_quantity
     dec esi
 
-    cmp esi, 0
+    cmp esi, 0                          ; If input is of size 0 -> get another input, this isn't valid.
     jz loop
 
-    dec esi
+    dec esi                             ; So buffer + esi will pointed to the wanted value.
     mov bl, byte [buffer + esi]
 
     cmp bl, 57        
-    jg lexical_commands
+    jg lexical_commands             ; What exactly are the "lexical commands"?
     cmp bl, 48
     jl mathematical_commands
 
@@ -203,26 +201,7 @@ loop:
         create_new_link
     updateLL:
         update_linkedlist
-        
-        ; Print current link
-    after_link:
-    ; Print the current link's data.
-        ;pushad
-        ;mov esi, dword [current_link_ptr]
-        ;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 6
-        ;popad
-
-        ;Print last component of the operand stack
        
-
-    break1:
-
         mov dl, dh
         mov dh, 0               ; Needs to be.
         cmp cl, 8
@@ -243,64 +222,12 @@ loop:
 
 
     end_loop:                      ; We arrive here after reading all the input number.
-        pushOperandStack                ; Push the created link to the operand-stack.
-        
-        printOperandStack
-        ;print last in stack.
-        ;pushad
-        ;mov eax, dword[lastInStack]
-        ;mov edx, 0
-        ;mov dl, byte[eax]
-        ;push edx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 8
-        ;popad
+    cmp dl, 0
+    jz loop
+    create_new_link
+    update_linkedlist  
 
-
-        cmp dl, 0
-        jz loop
-        create_new_link
-        update_linkedlist
-        
-
-        ;Print last component of the operand stack
-        ;pushad
-        ;mov eax, dword[lastInStack]
-        ;mov edx, 0
-        ;mov dl, byte[eax]
-        ;push edx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 8
-        ;popad
-
-        
-    ; Print the current link's data.
-        ;pushad
-        ;mov esi, dword [current_link_ptr]
-        ;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 6
-        ;popad
-
-    ;print the first link of the recently made linked-list.
-        ;pushad
-        ;mov esi, dword [first_link]
-        ;;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push preFirstLink
-        ;call printf
-        ;add esp, 6
-        ;popad
-
-        
+    
 
 
     jmp loop
@@ -310,16 +237,16 @@ mathematical_commands:
 lexical_commands:
 
     ; Print current link
-    pushad
-    mov esi, dword [current_link_ptr]
-    dec esi
-    mov edx, 0
-    mov dl, byte[esi] 
-    push dx
-    push PrePrintNum
-    call printf
-    add esp, 6
-    popad
+    ;pushad
+    ;mov esi, dword [current_link_ptr]
+    ;dec esi
+    ;mov edx, 0
+    ;mov dl, byte[esi] 
+    ;push dx
+    ;push PrePrintNum
+    ;call printf
+    ;add esp, 6
+    ;popad
 
 
     mov esp, ebp
