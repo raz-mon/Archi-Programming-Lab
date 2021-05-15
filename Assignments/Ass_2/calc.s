@@ -1,4 +1,5 @@
 %macro create_new_link 0
+    push ebx 
     push ecx
     push edx
     push esi
@@ -9,6 +10,7 @@
     pop esi
     pop edx
     pop ecx
+    pop ebx
 %endmacro
 
 %macro update_linkedlist 0
@@ -72,18 +74,11 @@
     add esp, 8
     popad
     inc %1
-    mov %1, [%1]
-    cmp dword[%1 + 1], 0
-    jnz %%printLinkLoop
-        ;Last byte
-        mov edx, 0
-        mov dl, byte[%1]
-        pushad
-        push edx
-        push PrePrintNum
-        call printf
-        add esp, 8
-        popad
+    cmp dword[%1], 0
+    jz %%end
+    mov %1, dword[%1]
+    jmp %%printLinkLoop
+%%end:
     popad
 %endmacro
 
@@ -94,6 +89,7 @@
     call fgets
     add esp, 12                    
 %endmacro
+    
 
 section .text               ; text.
   align 16
@@ -119,6 +115,7 @@ section .bss                ; uninitialized data.
 section .data               ; initialized data.
     PrePrintNum: db "number is: %0x", 10, 0
     PrePrintString: db "%s", 10, 0
+    addition_fault_str: db "Fault: less then 2 numbers in stack", 10, 0
     ;preFirstLink: db "First Link is: %0x", 10, 0
     calc_str: db "calc:",0
     current_link_ptr: dd 0 
@@ -173,14 +170,14 @@ loop:
         jnz count_quantity
     dec esi
 
-    cmp esi, 0
+    cmp esi, 0                          ; If input is of size 0 -> get another input, this isn't valid.
     jz loop
 
-    dec esi
+    dec esi                             ; So buffer + esi will pointed to the wanted value.
     mov bl, byte [buffer + esi]
 
     cmp bl, 57        
-    jg lexical_commands
+    jg lexical_commands             ; What exactly are the "lexical commands"?
     cmp bl, 48
     jl mathematical_commands
 
@@ -229,8 +226,8 @@ loop:
 
 
     end_loop:                      ; We arrive here after reading all the input number.
-    cmp dl, 0
-    jz loop
+    ;cmp dl, 0
+    ;jz loop
     create_new_link
     update_linkedlist  
 
@@ -239,21 +236,106 @@ loop:
 
     jmp loop
 
-mathematical_commands:  
+mathematical_commands:
+    cmp bl, 43
+    je addition
 
 lexical_commands:
 
-    ; Print current link
+
+addition:
     pushad
-    mov esi, dword [current_link_ptr]
+    mov esi, [stackCounter]
+    cmp esi, 2
+    jl addition_fault
     dec esi
+    mov ebx, [operand_stack + (esi - 1) * 4 ]      ; eax point to one linklist
+    mov ecx, [operand_stack + esi * 4]          ; ebx point to second linklist
+
+    mov dword [operand_stack + esi * 4 - 1], 0
+    mov dword [operand_stack + esi * 4], 0
+
+    dec esi
+    mov dword [stackCounter], esi
+
+    mov esi, ebx
+    mov edi, ecx
+    
     mov edx, 0
-    mov dl, byte[esi] 
-    push dx
-    push PrePrintNum
-    call printf
-    add esp, 6
+    loop_addition:
+        adc dl, byte [ebx]
+        adc dl, byte [ecx]
+        pushfd
+        create_new_link
+        update_linkedlist  
+
+        cmp dword [ebx + 1], 0
+        je first_num_end
+        cmp dword [ecx + 1], 0
+        je second_num_end
+
+        both_not_end:
+        mov ecx, dword [ecx + 1]
+        mov ebx, dword [ebx + 1]
+        mov edx, 0
+        popfd
+        jmp loop_addition
+
+        first_num_end:
+            cmp dword [ecx + 1], 0
+            je addition_end
+            mov ecx, dword [ecx + 1]
+            mov edx, 0
+            popfd
+            adc dl, byte [ecx]
+            pushfd
+            create_new_link
+            update_linkedlist
+            jmp first_num_end               
+
+        second_num_end:
+            cmp dword [ebx + 1], 0
+            je addition_end
+            mov ebx, dword [ebx + 1]
+            mov edx, 0
+            popfd
+            adc dl, byte [ebx]
+            pushfd
+            create_new_link
+            update_linkedlist
+            jmp second_num_end 
+
+        addition_end:
+            popfd
+            ;clean_link_list esi
+            ;clean_link_list edi
+            popad
+
+            printOperandStack
+
+            jmp loop
+
+    addition_fault:
+        pushad
+        push addition_fault_str
+        call printf
+        add esp, 4
+        popad
+
     popad
+    jmp loop
+
+    ; Print current link
+    ;pushad
+    ;mov esi, dword [current_link_ptr]
+    ;dec esi
+    ;mov edx, 0
+    ;mov dl, byte[esi] 
+    ;push dx
+    ;push PrePrintNum
+    ;call printf
+    ;add esp, 6
+    ;popad
 
 
     mov esp, ebp
