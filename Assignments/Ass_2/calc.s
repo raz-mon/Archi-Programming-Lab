@@ -376,18 +376,6 @@ duplicate:
         create_new_link
         update_linkedlist  
 
-        ; Print current link
-        ;pushad
-        ;mov esi, dword [current_link_ptr]
-        ;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 6
-        ;popad
-
         cmp dword [ebx + 1], 0
         je duplicate_end
 
