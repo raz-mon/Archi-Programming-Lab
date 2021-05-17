@@ -131,10 +131,10 @@
     sub dl, 48
     mov dword[stackSize], edx
 %%end:
-    push dword[stackSize]
-    push stackSizeSTR
-    call printf
-    add esp, 8
+    ;push dword[stackSize]
+    ;push stackSizeSTR
+    ;call printf
+    ;add esp, 8
 
 %endmacro
 
@@ -160,8 +160,9 @@ section .bss                ; uninitialized data.
 
 section .data               ; initialized data.
     PrePrintNum: db "number is: %0x", 10, 0
+    PrePrintCalc: db "%s", 0
     PrePrintString: db "%s", 10, 0
-    calc_str: db "calc:",0  
+    calc_str: db "calc: ",0  
     current_link_ptr: dd 0 
     ;lastInStack: dd 0                                           ; This is the "esp" of our operand_stack
     first_link: dd 0   
@@ -182,11 +183,6 @@ section .text               ; text
 main:
     ;Get stack size and assign it to stackSize.
     getStackSize esp            ; stackSize will hold the stack size after this.
-    push calc_str
-    push PrePrintString
-    call printf
-    add esp, 8
-
     call mycalc
 
     jmp end_program
@@ -203,6 +199,14 @@ mycalc:
     mov ecx, 0
 
 loop:
+    ; Print "calc:"
+    pushad
+    push calc_str
+    push PrePrintCalc
+    call printf
+    add esp, 8
+    popad
+
     mov dword[current_link_ptr], 0          ; initialize current_link_pointer to 0, so the first link will be recognized.
     fgets_ass                               ; stdio function fgets, put in buffer the wanted data
     cmp byte[buffer], 'q'
@@ -376,6 +380,18 @@ duplicate:
         create_new_link
         update_linkedlist  
 
+        ; Print current link
+        ;pushad
+        ;mov esi, dword [current_link_ptr]
+        ;dec esi
+        ;mov edx, 0
+        ;mov dl, byte[esi] 
+        ;push dx
+        ;push PrePrintNum
+        ;call printf
+        ;add esp, 6
+        ;popad
+
         cmp dword [ebx + 1], 0
         je duplicate_end
 
@@ -531,9 +547,10 @@ AND_op:
 
     AND_fault:
         pushad
-        push addition_fault_str
+        push emptyStack_err
+        push PrePrintString
         call printf
-        add esp, 4
+        add esp, 8
         popad
 
     popad
@@ -615,9 +632,10 @@ addition:
 
     addition_fault:
         pushad
-        push addition_fault_str
+        push emptyStack_err
+        push PrePrintString
         call printf
-        add esp, 4
+        add esp, 8
         popad
 
     popad
