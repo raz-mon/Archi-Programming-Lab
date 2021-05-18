@@ -97,6 +97,52 @@
     popad
 %endmacro
 
+%macro printInstructionCounter_oq 0  
+    pushad
+    mov eax, dword[instructionCounter]      ; eax holds the binary rep. of the amount of instructions.
+    mov ebx, 0                               
+
+    ; First two bits of eax
+    mov esi, eax
+    and esi, 0xC0000000
+    shr esi, 30
+    cmp esi, 0
+    jz %%no_print_1
+    pushad
+    push esi
+    push PrePrintNum_NoEnt
+    call printf
+    add esp, 8
+    popad
+%%no_print_1:
+    shl eax, 2
+    ; From here on, eax holds the 30 remaining bits.
+
+%%loop:
+    mov esi, eax
+    and esi, 0xE0000000                           ; Mask only three lsb bits.
+    shr esi, 29
+    cmp esi, 0
+    jz %%no_print
+    pushad
+    push esi
+    push PrePrintNum_NoEnt
+    call printf
+    add esp, 8
+    popad
+%%no_print:
+    shl eax, 3
+    cmp eax, 0
+    jnz %%loop
+    ; Print newLine.
+    push newLinestr
+    call printf
+    add esp,4
+
+    popad
+
+%endmacro
+
 %macro fgets_ass 0
     push dword [stdin]              ;path to file(stdin)
     push dword 81                   ;max lenght
@@ -155,8 +201,9 @@ section .text               ; text.
   extern stderr
 
 section .bss                ; uninitialized data.
-    buffer: resb 81 ; max size - input line , 80 bytes + 1 byte
+    buffer: resb 81                 ; max size - input line , 80 bytes + 1 byte
     operand_stack: resd 63          ; The program's operand-stack. 63 is it's maximum size.
+    output_buffer: resb 640
 
 section .data               ; initialized data.
     PrePrintNum: db "number is: %0x", 10, 0
@@ -176,6 +223,11 @@ section .data               ; initialized data.
     bad_instruction_string: db "bad instruction. Try again pal.", 10, 0
     stackSizeSTR: db "stack size is: %d", 10, 0
     preValueSTR: db "value of poped link: %oq", 10, 0
+    current_pop_and_print: db "%d", 0
+    last_pop_and_print: db "%d" , 10 , 0
+    instructionCounter: dd 0
+    PrePrintNum_NoEnt: db "%0x",0
+    newLinestr: db "", 10, 0
 
 section .rodata             ; read-only data.
 
@@ -211,6 +263,7 @@ loop:
     fgets_ass                               ; stdio function fgets, put in buffer the wanted data
     cmp byte[buffer], 'q'
     jz end_myCalc
+    inc dword[instructionCounter]
     mov ebx, 0                              
     mov ecx, 0
     mov esi, 0                              ; counter for byte index
@@ -330,41 +383,144 @@ non_zero:
     jmp loop
 
 pop_and_print:          ; Maybe add a pointer to the representation of the input number that made the link??
-;    pushad
-;
-;    cmp dword[stackCounter], 0
-;    jnz cont_p
-;    push emptyStack_err
-;    push dword [stderr]
-;    call printf
-;    add esp, 8
-;    popad
-;    jmp loop
-;cont_p:
-;    mov eax, dword[lastInStack]
-;    mov edx, 0
-;    mov dl, byte[eax]
-;    push edx
-;    push preValueSTR
-;    call printf
-;    add esp, 8
-;    dec dword[stackCounter]
-;; check if there is another linked-list in the operand stack to assign to last_in_stack
-;    cmp dword[stackCounter], 0
-;    jnz cont_p2
-;    mov dword[lastInStack], 0
-;    popad
-;    jmp loop
-;
-;cont_p2:
-;    mov esi, dword[stackCounter]
-;    dec esi
-;    mov esi, dword[operand_stack+4*esi]
-;    mov dword[lastInStack], esi
-;    popad
-;    jmp loop
+pushad
+    mov esi, [stackCounter]
+    cmp esi, 1
+    jl pop_and_print_fault
+    dec esi
+    mov ebx, [operand_stack + esi * 4]          ; ebx point to second linklist
+    mov dword [operand_stack + esi * 4], 0
+    mov dword [stackCounter], esi
 
-; Make sure with Doron that it's fine that we have that extra q after the number (from the printf)!!!!
+    mov eax, 0
+    mov esi, ebx
+    count_linklist_size:
+        inc eax
+        cmp dword [esi + 1] , 0
+        je initialize_data
+        mov esi, dword [esi + 1]
+        jmp count_linklist_size
+
+    initialize_data:
+    mov esi, ebx
+    mov edx, 3
+    mul edx
+    mov byte[output_buffer + eax] , 10
+    dec eax
+    mov edi, 0
+    mov edx, 0
+    mov ecx, 0
+    loop_pop_and_print:
+        mov dl, byte [ebx]
+        
+        print_loop:
+            cmp edi, 6
+            jge pop_and_print_greater
+
+            mov byte[output_buffer + eax], 7
+            ;mov esi, 7
+            and byte[output_buffer + eax], dl
+            ;and esi , edx
+            add byte[output_buffer + eax], 48
+            ;add esi , 48
+            dec eax
+
+            ;pushad
+            ;push esi
+            ;push last_pop_and_print
+            ;call printf
+            ;add esp, 8
+            ;popad
+
+            shr edx, 3
+            add edi, 3
+            jmp print_loop
+
+        pop_and_print_greater:
+            cmp edi, 6
+            je pop_and_print_greater_6
+            cmp edi, 7
+            je pop_and_print_greater_7
+            cmp edi, 8
+            je pop_and_print_greater_8
+
+            pop_and_print_greater_6:
+                cmp dword [ebx + 1], 0
+                je print_and_done
+                mov ebx, [ebx + 1]
+                mov ecx, 0
+                mov cl, byte [ebx]
+                shl ecx, 2
+                add edx, ecx
+                mov edi, -2
+                jmp print_loop
+
+            pop_and_print_greater_7:
+                cmp dword [ebx + 1], 0
+                je print_and_done
+                mov ebx, [ebx + 1]
+                mov ecx, 0
+                mov cl, byte [ebx]
+                shl ecx, 1
+                add edx, ecx
+                mov edi, -1
+                jmp print_loop
+
+            pop_and_print_greater_8:
+                cmp dword [ebx + 1], 0
+                je print_and_done
+                mov ebx, [ebx + 1]
+                mov edi, 0
+                jmp loop_pop_and_print
+
+        print_and_done:
+            mov byte[output_buffer + eax], 3
+            and byte[output_buffer + eax], dl
+            add byte[output_buffer + eax], 48
+            
+            mov ebx, output_buffer
+            delete_nullchar_loop:
+                cmp byte [ebx] , 0
+                jne delete_zeros_loop
+                add ebx , 1
+                jmp delete_nullchar_loop
+
+            delete_zeros_loop:
+                cmp byte [ebx] , 48
+                jne pop_and_print_end
+                add ebx , 1
+                jmp delete_zeros_loop
+
+        pop_and_print_end:
+            pushad
+            push ebx
+            call printf
+            add esp, 4
+            popad
+            ;clean_link_list esi
+
+        mov ecx, 640
+        reset_output_buffer:
+            cmp ecx, 0
+            je loop
+            mov byte [output_buffer + ecx - 1] , 0
+            dec ecx
+            jmp reset_output_buffer   
+
+        popad
+        jmp loop
+
+    pop_and_print_fault:
+        pushad
+        push emptyStack_err
+        push PrePrintString
+        call printf
+        add esp, 8
+        popad
+
+    popad
+    jmp loop
+
 duplicate:
     pushad
     mov esi, [stackCounter]
@@ -379,18 +535,6 @@ duplicate:
         mov dl, byte [ebx]
         create_new_link
         update_linkedlist  
-
-        ; Print current link
-        ;pushad
-        ;mov esi, dword [current_link_ptr]
-        ;dec esi
-        ;mov edx, 0
-        ;mov dl, byte[esi] 
-        ;push dx
-        ;push PrePrintNum
-        ;call printf
-        ;add esp, 6
-        ;popad
 
         cmp dword [ebx + 1], 0
         je duplicate_end
@@ -643,6 +787,7 @@ addition:
 
 ; End of function myCalc();
 end_myCalc:
+    printInstructionCounter_oq             ; Macro that will print the instruction counter in octal.
     mov esp, ebp
     pop ebp
     ret
@@ -650,4 +795,4 @@ end_myCalc:
 end_program:
     mov ebx, 0
     mov eax, 1
-    int 0x80
+int 0x80
