@@ -44,7 +44,6 @@
     mov esi, dword[stackCounter]
     mov dword[operand_stack + esi*4], eax ; Next free spot gets the new link address.
     inc dword[stackCounter]         ; Increment the stack counter.
-    ;mov dword[lastInStack], eax     ; Update the "last in stack" pointer.
     jmp %%end
 %%err:
     pushad
@@ -362,10 +361,6 @@ end_loop:                      ; We arrive here after reading all the input numb
     jz loop
     create_new_link
     update_linkedlist  
-
-;    printOperandStack
-
-
     jmp loop
 
 mathematical_commands: 
@@ -414,22 +409,20 @@ non_zero:
     mov esi, dword[stackCounter]
 
     mov eax, dword[operand_stack + esi*4] 
-    ;freeLinkedList eax                      ; Free the poped linked-list.
+    freeLinkedList eax                      ; Free the poped linked-list.
    
     mov dword[operand_stack + esi*4], 0
     popad
     jmp loop
 
+
 pop_and_print:          ; Maybe add a pointer to the representation of the input number that made the link??
-pushad
+    pushad
     mov esi, [stackCounter]
     cmp esi, 1
     jl pop_and_print_fault
     dec esi
     mov ebx, [operand_stack + esi * 4]          ; ebx point to second linklist
-    
-    mov ebp, [operand_stack + esi * 4]          ; ebp points to the linked-list to delete and free.
-
     mov dword [operand_stack + esi * 4], 0
     mov dword [stackCounter], esi
 
@@ -459,11 +452,8 @@ pushad
             jge pop_and_print_greater
 
             mov byte[output_buffer + eax], 7
-            ;mov esi, 7
             and byte[output_buffer + eax], dl
-            ;and esi , edx
             add byte[output_buffer + eax], 48
-            ;add esi , 48
             dec eax
 
             shr edx, 3
@@ -531,7 +521,7 @@ pushad
             call printf
             add esp, 4
             popad
-            ;freeLinkedList esi
+            freeLinkedList esi
 
         mov ecx, 640
         reset_output_buffer:
@@ -553,7 +543,6 @@ pushad
         add esp, 12
         popad
 
-    ;freeLinkedList ebp
     popad
     jmp loop
 
@@ -564,8 +553,6 @@ duplicate:
     jl duplicate_fault
     dec esi
     mov ebx, [operand_stack + esi * 4]          ; ebx point to second linklist
-
-    ;mov dword [operand_stack + esi * 4], 0     ; Why?? We don't need to pop anything..
     mov edx, 0
     loop_duplicate:
         mov dl, byte [ebx]
@@ -578,7 +565,6 @@ duplicate:
         mov ebx, [ebx + 1]
         jmp loop_duplicate
         duplicate_end:
-            ;printOperandStack
             popad
             jmp loop
 
@@ -634,19 +620,7 @@ end_count_loop:
     pop esi                         ; esi = stackCounter's value.
     mov byte[eax], dl               ; Assign the counter's value to the data of the link we are going to push to the operand-stack.
     mov dword[operand_stack + (esi-1)*4], eax   ; Insert the pointer to the link to the operand stack.
-
-    ;pushad
-    ;mov eax, dword[operand_stack + (esi-1)*4]
-    ;mov ebx, 0
-    ;mov bl, byte[eax]
-    ;push ebx
-    ;push PrePrintNum
-    ;call printf
-    ;add esp, 8
-    ;popad
-
-    ;freeLinkedList ebp              ; Free the popped linked-list.
-
+    freeLinkedList ebp              ; Free the popped linked-list.
     popad                           ; Retrieve registers state.
     jmp loop
 
@@ -712,12 +686,9 @@ AND_op:
             jmp second_num_end_AND 
 
         AND_end:
-            ;freeLinkedList esi          ; Free linked-list that edi points to.
-            ;freeLinkedList edi          ; Free linked-list that edi points to.
+            freeLinkedList esi          ; Free linked-list that edi points to.
+            freeLinkedList edi          ; Free linked-list that edi points to.
             popad
-
-            ;printOperandStack
-
             jmp loop
 
     AND_fault:
@@ -798,12 +769,9 @@ addition:
 
         addition_end:
             popfd
-            ;freeLinkedList esi          ; Free linked-list that edi points to.
-            ;freeLinkedList edi          ; Free linked-list that edi points to.
+            freeLinkedList esi          ; Free linked-list that edi points to.
+            freeLinkedList edi          ; Free linked-list that edi points to.
             popad
-
-            ;printOperandStack
-
             jmp loop
 
     addition_fault:
@@ -828,4 +796,4 @@ end_myCalc:
 end_program:
     mov ebx, 0
     mov eax, 1
-int 0x80
+    int 0x80
