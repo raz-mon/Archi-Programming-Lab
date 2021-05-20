@@ -44,15 +44,16 @@
     mov esi, dword[stackCounter]
     mov dword[operand_stack + esi*4], eax ; Next free spot gets the new link address.
     inc dword[stackCounter]         ; Increment the stack counter.
-    ;mov dword[lastInStack], eax     ; Update the "last in stack" pointer.
     jmp %%end
 %%err:
+    pushad
     push overFlow_err
     push PrePrintString
     push dword [stderr]
     call fprintf
     add esp, 12
-    
+    popad
+
     jmp loop
 %%end:
     popad                           ; Restore state of the registers.
@@ -97,6 +98,86 @@
     popad
 %endmacro
 
+%macro freeLinkedList 1           ; The argument to the macro is a pointer to the link we wish to free.
+    pushad
+    mov ebx, dword %1               ; ebx holds the pointer to the linked-list to free.
+    mov eax, dword[%1+1]            ; eax points to the next link to free in the linked-list.
+    cmp eax, 0
+    jz %%lastToFree
+
+%%free_loop:
+    pushad
+    push ebx
+    call free
+    add esp, 4
+    popad
+
+    mov ebx, eax
+    mov eax, dword[ebx+1]           ; eax points to next link.
+    cmp eax, 0
+    jz %%lastToFree
+    jmp %%free_loop
+
+
+%%lastToFree:
+    pushad
+    push ebx
+    call free
+    add esp, 4
+    popad
+
+    popad
+%endmacro
+
+%macro printInstructionCounter_oq 0  
+    pushad
+
+    mov eax, dword[instructionCounter]      ; eax holds the binary rep. of the amount of instructions.
+    mov ebx, 0                               
+
+    ; First two bits of eax
+    mov esi, eax
+    and esi, 0xC0000000
+    shr esi, 30
+    cmp esi, 0
+    jz %%no_print_1
+    pushad
+    push esi
+    push PrePrintNum_NoEnt
+    call printf
+    add esp, 8
+    popad
+%%no_print_1:
+    shl eax, 2
+    ; From here on, eax holds the 30 remaining bits.
+
+%%loop_l:
+    mov esi, eax
+    and esi, 0xE0000000                           ; Mask only three lsb bits.
+    shr esi, 29
+    cmp esi, 0
+    jz %%no_print
+    pushad
+    push esi
+    push PrePrintNum_NoEnt
+    call printf
+    add esp, 8
+    popad
+%%no_print:
+    shl eax, 3
+    cmp eax, 0
+    jnz %%loop_l
+    ; Print newLine.
+    pushad
+    push newLinestr
+    call printf
+    add esp,4
+    popad
+
+    popad
+
+%endmacro
+
 %macro fgets_ass 0
     push dword [stdin]              ;path to file(stdin)
     push dword 81                   ;max lenght
@@ -118,7 +199,6 @@
     jz %%one_num                ; The input number is one digit.
     mov dl, byte[eax]         ; The msb of the input will be assigned to dl.
     sub dl, 48                  ; dl will hold the binary representation of the msb.
-    ;mul dl, 7                   ; Multiply by 7, since the input is in base 7.
     shl dl, 3
     mov ebx, 0
     mov bl, byte[eax+1]
@@ -131,11 +211,6 @@
     sub dl, 48
     mov dword[stackSize], edx
 %%end:
-    ;push dword[stackSize]
-    ;push stackSizeSTR
-    ;call printf
-    ;add esp, 8
-
 %endmacro
 
 section .text               ; text.
@@ -147,7 +222,6 @@ section .text               ; text.
   extern malloc 
   extern calloc 
   extern free 
-  ;extern gets 
   extern getchar 
   extern fgets 
   extern stdout
@@ -160,12 +234,11 @@ section .bss                ; uninitialized data.
     output_buffer: resb 640
 
 section .data               ; initialized data.
-    PrePrintNum: db "number is: %0x", 10, 0
+    PrePrintNum: db "%0x", 10, 0
     PrePrintCalc: db "%s", 0
     PrePrintString: db "%s", 10, 0
     calc_str: db "calc: ",0  
     current_link_ptr: dd 0 
-    ;lastInStack: dd 0                                           ; This is the "esp" of our operand_stack
     first_link: dd 0   
     print_next_link_message: db "printing next link", 10, 0
     stackCounter: dd 0              ; Will hold the amount of used cells at the operand-stack.
@@ -179,6 +252,9 @@ section .data               ; initialized data.
     preValueSTR: db "value of poped link: %oq", 10, 0
     current_pop_and_print: db "%d", 0
     last_pop_and_print: db "%d" , 10 , 0
+    instructionCounter: dd 0
+    PrePrintNum_NoEnt: db "%0x",0
+    newLinestr: db "", 10, 0
 
 section .rodata             ; read-only data.
 
@@ -214,6 +290,7 @@ loop:
     fgets_ass                               ; stdio function fgets, put in buffer the wanted data
     cmp byte[buffer], 'q'
     jz end_myCalc
+    
     mov ebx, 0                              
     mov ecx, 0
     mov esi, 0                              ; counter for byte index
@@ -284,23 +361,23 @@ end_loop:                      ; We arrive here after reading all the input numb
     jz loop
     create_new_link
     update_linkedlist  
-
-    printOperandStack
-
-
     jmp loop
 
-mathematical_commands:  
+mathematical_commands: 
+    inc dword[instructionCounter]
     cmp bl, '+'
     je addition
     cmp bl, '&'
     jz AND_op
+    pushad
     push bad_instruction_string         ; Bad instruction
     call printf
     add esp, 4
+    popad
     jmp loop
 
 lexical_commands:
+    inc dword[instructionCounter]
     cmp bl, 'p'
     jz pop_and_print
     cmp bl, 'd'
@@ -309,9 +386,11 @@ lexical_commands:
     jz num_of_bytes
     cmp bl, 't'                           ; This is for us only!! Pops one operand from the operand-stack.
     jz pop
+    pushad
     push bad_instruction_string         ; Bad instruction
     call printf
     add esp, 4
+    popad
     jmp loop
 
 pop:
@@ -327,13 +406,18 @@ pop:
     jmp loop
 non_zero:
     dec dword[stackCounter]
-    mov esi, 0
+    mov esi, dword[stackCounter]
+
+    mov eax, dword[operand_stack + esi*4] 
+    freeLinkedList eax                      ; Free the poped linked-list.
+   
     mov dword[operand_stack + esi*4], 0
     popad
     jmp loop
 
+
 pop_and_print:          ; Maybe add a pointer to the representation of the input number that made the link??
-pushad
+    pushad
     mov esi, [stackCounter]
     cmp esi, 1
     jl pop_and_print_fault
@@ -368,19 +452,9 @@ pushad
             jge pop_and_print_greater
 
             mov byte[output_buffer + eax], 7
-            ;mov esi, 7
             and byte[output_buffer + eax], dl
-            ;and esi , edx
             add byte[output_buffer + eax], 48
-            ;add esi , 48
             dec eax
-
-            ;pushad
-            ;push esi
-            ;push last_pop_and_print
-            ;call printf
-            ;add esp, 8
-            ;popad
 
             shr edx, 3
             add edi, 3
@@ -447,7 +521,7 @@ pushad
             call printf
             add esp, 4
             popad
-            ;clean_link_list esi
+            freeLinkedList esi
 
         mov ecx, 640
         reset_output_buffer:
@@ -464,8 +538,9 @@ pushad
         pushad
         push emptyStack_err
         push PrePrintString
-        call printf
-        add esp, 8
+        push dword [stderr]
+        call fprintf
+        add esp, 12
         popad
 
     popad
@@ -478,8 +553,6 @@ duplicate:
     jl duplicate_fault
     dec esi
     mov ebx, [operand_stack + esi * 4]          ; ebx point to second linklist
-
-    ;mov dword [operand_stack + esi * 4], 0     ; Why?? We don't need to pop anything..
     mov edx, 0
     loop_duplicate:
         mov dl, byte [ebx]
@@ -492,7 +565,6 @@ duplicate:
         mov ebx, [ebx + 1]
         jmp loop_duplicate
         duplicate_end:
-            printOperandStack
             popad
             jmp loop
 
@@ -511,18 +583,6 @@ duplicate:
 
 
 num_of_bytes:
-    ;
-    ;We start by writing the code in high-level-language (hll)
-    ;link* link = operand_stack.pop();
-    ;int counter = 1;
-    ;while(link.next != null(0)){
-    ;    counter++;
-    ;    link = link.next;
-    ;}
-    ;operand_stack.push(counter);
-    ;return counter;
-    ;
-    ; Great, now in assembly.
     pushad                          ; Save registers state
     ; If stackCounter = 0 --> error to stderr.
     cmp dword[stackCounter], 0
@@ -538,6 +598,9 @@ num_of_bytes:
 not_zero1:
     mov esi, dword[stackCounter]    ; esi holds the amount of components in the operand-stack.
     mov edi, dword[operand_stack + (esi-1)*4]   ; edi holds pointer to the last linked-list in the operand-stack.
+    
+    mov ebp, dword[operand_stack + (esi-1)*4]   ; ebp will be used to free the popped linked-list.
+    
     mov edx, 0                      ; edx will be our counter.
 count_loop:
     inc edx                         ; Increment counter.
@@ -557,17 +620,7 @@ end_count_loop:
     pop esi                         ; esi = stackCounter's value.
     mov byte[eax], dl               ; Assign the counter's value to the data of the link we are going to push to the operand-stack.
     mov dword[operand_stack + (esi-1)*4], eax   ; Insert the pointer to the link to the operand stack.
-
-    pushad
-    mov eax, dword[operand_stack + (esi-1)*4]
-    mov ebx, 0
-    mov bl, byte[eax]
-    push ebx
-    push PrePrintNum
-    call printf
-    add esp, 8
-    popad
-
+    freeLinkedList ebp              ; Free the popped linked-list.
     popad                           ; Retrieve registers state.
     jmp loop
 
@@ -579,6 +632,8 @@ AND_op:
     dec esi
     mov ebx, [operand_stack + (esi - 1) * 4 ]      ; eax point to one linklist
     mov ecx, [operand_stack + esi * 4]          ; ebx point to second linklist
+
+    
 
     mov dword [operand_stack + (esi - 1) * 4], 0
     mov dword [operand_stack + esi * 4], 0
@@ -631,20 +686,18 @@ AND_op:
             jmp second_num_end_AND 
 
         AND_end:
-            ;clean_link_list esi
-            ;clean_link_list edi
+            freeLinkedList esi          ; Free linked-list that edi points to.
+            freeLinkedList edi          ; Free linked-list that edi points to.
             popad
-
-            printOperandStack
-
             jmp loop
 
     AND_fault:
         pushad
         push emptyStack_err
         push PrePrintString
-        call printf
-        add esp, 8
+        push dword [stderr]
+        call fprintf
+        add esp, 12
         popad
 
     popad
@@ -716,20 +769,18 @@ addition:
 
         addition_end:
             popfd
-            ;clean_link_list esi
-            ;clean_link_list edi
+            freeLinkedList esi          ; Free linked-list that edi points to.
+            freeLinkedList edi          ; Free linked-list that edi points to.
             popad
-
-            printOperandStack
-
             jmp loop
 
     addition_fault:
         pushad
         push emptyStack_err
         push PrePrintString
-        call printf
-        add esp, 8
+        push dword [stderr]
+        call fprintf
+        add esp, 12
         popad
 
     popad
@@ -737,6 +788,7 @@ addition:
 
 ; End of function myCalc();
 end_myCalc:
+    printInstructionCounter_oq             ; Macro that will print the instruction counter in octal.
     mov esp, ebp
     pop ebp
     ret
