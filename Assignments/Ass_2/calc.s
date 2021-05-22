@@ -151,22 +151,49 @@
     shl eax, 2
     ; From here on, eax holds the 30 remaining bits.
 
-%%loop_l:
+%%head_zero_loop:
+    
     mov esi, eax
     and esi, 0xE0000000                           ; Mask only three lsb bits.
     shr esi, 29
     cmp esi, 0
-    jz %%no_print
+    jnz %%done_with_zeros
+    shl eax, 3
+    inc ebx
+    cmp eax, 0
+    jz %%only_zero
+    jmp %%head_zero_loop
+
+
+%%done_with_zeros:
+    
+    mov esi, eax
+    and esi, 0xE0000000                           ; Mask only three lsb bits.
+    shr esi, 29
+    ;print the octal digit.
     pushad
     push esi
     push PrePrintNum_NoEnt
     call printf
     add esp, 8
     popad
-%%no_print:
+
+    cmp ebx, 9
+    jz %%end_please
+
     shl eax, 3
-    cmp eax, 0
-    jnz %%loop_l
+    inc ebx
+    jmp %%done_with_zeros
+
+%%only_zero:
+    pushad
+    push 0
+    push PrePrintNum_NoEnt
+    call printf
+    add esp, 8
+    popad
+
+%%end_please:
     ; Print newLine.
     pushad
     push newLinestr
@@ -177,6 +204,7 @@
     popad
 
 %endmacro
+
 
 %macro fgets_ass 0
     push dword [stdin]              ;path to file(stdin)
@@ -796,4 +824,4 @@ end_myCalc:
 end_program:
     mov ebx, 0
     mov eax, 1
-int 0x80
+    int 0x80
