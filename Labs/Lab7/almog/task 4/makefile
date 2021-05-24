@@ -1,12 +1,10 @@
-
-
 all: exec
 
-exec: digit_cnt1.s
-	nasm -f elf digit_cnt1.s -o digit_cnt1.o
-	gcc -m32 -Wall -g digit_cnt1.o -o digit_cnt1
+exec: digit_cnt.c
+	gcc -m32 -g -c -fno-pie -o digit_cnt.o digit_cnt.c
+	gcc -m32 -g -o digit_cnt digit_cnt.o 
 
 .PHONY: clean
 clean:
-	rm -rf ./*.o digit_cnt1
+	rm -rf ./*.o digit_cnt
 
