@@ -100,24 +100,26 @@ void exm_elf_file(state* s){
   printf("  %-35s%d bytes\n" , "Number of section headers:" , s->header->e_shnum);
   printf("  %-35s%d bytes\n" , "Start of program header:" , s->header->e_phoff);
   printf("  %-35s%d bytes\n" , "Number of program headers:" , s->header->e_phnum);
+  printf("  %-35s%d bytes\n" , "Size of section headers:" , s->header->e_shentsize);
+  printf("  %-35s%d bytes\n" , "Size of program headers:" , s->header->e_phentsize);
   Elf32_Shdr * sheader = (Elf32_Shdr *)(s->map_start + s->header->e_shoff);
-  Elf32_Phdr * pheader = (Elf32_Phdr *)s->header->e_phoff;
 
-  if ( (s->map_start = mmap(0, s->fd_stat.st_size, PROT_READ | PROT_WRITE , MAP_SHARED, s->Currentfd, 0)) == MAP_FAILED ) {
-    perror("mmap failed");
-    exit(-4);
-  }
+  Elf32_Shdr * shstr_tab = (Elf32_Shdr *)(s->map_start + s->header->e_shoff) + s->header->e_shnum - 3;
+  Elf32_Off shstr_off = shstr_tab->sh_offset;
+
+  Elf32_Phdr * pheader = (Elf32_Phdr *)(s->header->e_phoff);
 
   printf("\nSection Headers:\n");
-  printf("  %-7s%-10s%s\n", "[Nr]", "Name","Size");
-  //printf("\n\n check %d \n\n" , sheader->sh_size);
-  
+  printf("  %-7s%-20s%-13s%-9s%-8s%-8s\n", "[Nr]", "Name","Type","Addr","Off","Size");
+
   for(int i = 0; i < s->header->e_shnum; i++){
-    //printf("  [%-7d]%-10d%d\n" ,i , sheader->sh_name, sheader->sh_size);
-    printf("  [%2d%-4c%-10d%d\n",i ,']', sheader->sh_name, sheader->sh_size);
-    sheader = s->map_start + s->header->e_shoff + sheader->sh_offset + sheader->sh_size;
-    //sheader = s->map_start + sizeof(sheader) + sheader->sh_offset;
+    char * sh_name = (s->map_start + shstr_off + sheader->sh_name);
+    printf("  [%2d%-4c%-20s%-13X%-9X%-8X%-8X\n",i ,']', sh_name, sheader->sh_type,sheader->sh_addr,
+    sheader->sh_offset,sheader->sh_size);
+    sheader += 1;
   }
+  
+  
   
 
 }
