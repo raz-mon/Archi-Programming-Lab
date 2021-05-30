@@ -51,6 +51,21 @@ char * getSymName(state * s , int index);
 void printRelTab(Elf32_Shdr * h, state * s);
 void printRelaTab(Elf32_Shdr * h, state * s);
 Elf32_Shdr * findSymtab(state * s);
+char * getSecHeadName(state * s , int index);
+char * getSymName(state * s , int index);
+void printRelTab(Elf32_Shdr * h, state * s);
+void printRelaTab(Elf32_Shdr * h, state * s);
+int getSymValue(Elf32_Rel * rel, state * s);
+char * getRelName(Elf32_Rel * rel, state * s);
+int getSymValueA(Elf32_Rela * rela, state * s);
+char * getRelaName(Elf32_Rela * rela, state * s);
+char * getDynSymName(state * s , Elf32_Shdr * dynstr, int index);
+Elf32_Shdr * getDynSym(state * s);
+
+
+
+
+
 
 void debug_mode(state* s){
   if(s->debug_mode == 0){
@@ -121,17 +136,17 @@ void print_sym(state* s){
 
 void rel_tab(state* s){
   Elf32_Shdr * sheader = (Elf32_Shdr *)(s->map_start + s->header->e_shoff);
-  char check = 0;
   for(int i = 0; i < s->header->e_shnum; i++){
     if(sheader->sh_type == SHT_REL | sheader->sh_type == SHT_RELA){
-      if(check == 0){
-        check = 1;
-        printf("\nRelocation table:\n");
-        printf("  %-8s%s\n", "Offset", "Info");
-      }
-      if(sheader->sh_type == SHT_REL){ printRelTab(sheader,s); }
-      else{ printRelaTab(sheader,s); }
+      int enteries;
+      if(sheader->sh_type == SHT_REL){ enteries = (sheader->sh_size)/sizeof(Elf32_Rel); }
+      else{ enteries = (sheader->sh_size)/sizeof(Elf32_Rela); }
+      printf("\nRelocation section '%s' at offset 0x%x contains %d entries:\n" , getSecHeadName(s,sheader->sh_name)
+      , sheader->sh_offset, enteries);
+      printf("  %-8s%-8s%-12s%-8s%s\n", "Offset", "Info", "Type", "Sym Value", "Sym Name");
     }
+    if(sheader->sh_type == SHT_REL){ printRelTab(sheader,s); }
+    else if(sheader->sh_type == SHT_RELA){ printRelaTab(sheader,s); }
     sheader += 1;
   }
 }
@@ -230,16 +245,8 @@ char * getSecHeadName(state * s , int index){
   return sh_name;
 }
 char * getSymName(state * s , int index){
-  //Elf32_Shdr * sheader = (Elf32_Shdr *)(s->map_start + s->header->e_shoff);
-  //Elf32_Shdr * symtab = (Elf32_Shdr *)(s->map_start + s->header->e_shoff) + s->header->e_shnum - 2;
-  //Elf32_Off sym_off = symtab->sh_offset;
-
   Elf32_Shdr * strtab = (Elf32_Shdr *)(s->map_start + s->header->e_shoff) + s->header->e_shnum - 1;
   Elf32_Off str_off = strtab->sh_offset;
-
-  //Elf32_Sym * sym_tab = (Elf32_Sym *)(s->map_start + sym_off);
-  //Elf32_Shdr * currentsh = (Elf32_Shdr *)(s->map_start + s->header->e_shoff) + index - 1;
-  //Elf32_Off currentsh_off = currentsh->sh_offset;
   char * st_name = (s->map_start + str_off + index);
   return st_name;
 }
@@ -248,7 +255,8 @@ void printRelTab(Elf32_Shdr * h, state * s){
   int num_of_rel = (h->sh_size)/sizeof(Elf32_Rel);
   for (int i = 0; i < num_of_rel; i++)
   {
-    printf("  %-8X%X\n", rel->r_offset, rel->r_info);
+    printf("  %-8X%-8X%-12X%-8X%s\n", rel->r_offset, rel->r_info, ELF32_R_TYPE(rel->r_info), getSymValue(rel, s)
+    , getRelName(rel, s));
     rel += 1;
   }
 }
@@ -257,7 +265,45 @@ void printRelaTab(Elf32_Shdr * h, state * s){
   int num_of_rela = (h->sh_size)/sizeof(Elf32_Rela);
   for (int i = 0; i < num_of_rela; i++)
   {
-    printf("  %-8X%X\n", rela->r_offset, rela->r_info);
+    printf("  %-8X%-8X%-12X%-8X%s\n", rela->r_offset, rela->r_info, ELF32_R_TYPE(rela->r_info), getSymValueA(rela, s)
+    , getRelaName(rela, s));
     rela += 1;
   }
+}
+int getSymValue(Elf32_Rel * rel, state * s){
+  Elf32_Shdr * dynsym = getDynSym(s);
+  int sym_ind = ELF32_R_SYM(rel->r_info);
+  Elf32_Sym * dym = (Elf32_Sym *)(s->map_start + dynsym->sh_offset) + sym_ind;
+  return dym->st_value;
+}
+char * getRelName(Elf32_Rel * rel, state * s){
+  Elf32_Shdr * dynsym = getDynSym(s);
+  int sym_ind = ELF32_R_SYM(rel->r_info);
+  Elf32_Sym * dyn = (Elf32_Sym *)(s->map_start + dynsym->sh_offset) + sym_ind;
+  return getDynSymName(s,dynsym + 1, dyn->st_name);
+}
+int getSymValueA(Elf32_Rela * rela, state * s){
+  Elf32_Shdr * dynsym = getDynSym(s);
+  int sym_ind = ELF32_R_SYM(rela->r_info);
+  Elf32_Sym * dym = (Elf32_Sym *)(s->map_start + dynsym->sh_offset) + sym_ind;
+  return dym->st_value;
+}
+char * getRelaName(Elf32_Rela * rela, state * s){
+  Elf32_Shdr * dynsym = getDynSym(s);
+  int sym_ind = ELF32_R_SYM(rela->r_info);
+  Elf32_Sym * dyn = (Elf32_Sym *)(s->map_start + dynsym->sh_offset);
+  return getDynSymName(s,dynsym + 1, dyn->st_name);
+}
+char * getDynSymName(state * s , Elf32_Shdr * dynstr, int index){
+  Elf32_Off str_off = dynstr->sh_offset;
+  char * st_name = (s->map_start + str_off + index);
+  return st_name;
+}
+Elf32_Shdr * getDynSym(state * s){
+  Elf32_Shdr * dynsym = (Elf32_Shdr *)(s->map_start + s->header->e_shoff);
+  for(int i = 0; i < s->header->e_shnum; i++){
+    if(dynsym->sh_type == SHT_DYNSYM){ break; }
+    dynsym += 1;
+  }
+  return dynsym;
 }
