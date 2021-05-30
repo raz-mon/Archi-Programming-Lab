@@ -42,6 +42,10 @@ void print_sym(state* s);
 void rel_tab(state* s);
 void quit(state* s);
 
+void beforExam(state * s);
+void afterExam(state * s);
+void printShtab(state * s);
+
 void debug_mode(state* s){
   if(s->debug_mode == 0){
     s->debug_mode = 1;
@@ -51,8 +55,6 @@ void debug_mode(state* s){
     s->debug_mode = 0;
     printf("Debug flag now off\n");
   }
-
-  printf("Debug mode %d\n" , s->debug_mode);
 }
 
 void exm_elf_file(state* s){
@@ -61,27 +63,8 @@ void exm_elf_file(state* s){
   fgets(str,100,stdin);
   sscanf(str,"%s",s->file_name);
 
-  if(s->Currentfd != -1){
-    if( (close(s->Currentfd)) != 0 ) {
-      perror("error in close");
-      exit(-1);
-    }
-  }
-  if( (s->Currentfd = open(s->file_name, O_RDWR)) < 0 ) {
-    perror("error in open");
-    exit(-1);
-  }
-
-  if( fstat(s->Currentfd, &s->fd_stat) != 0 ) {
-    perror("stat failed");
-    exit(-1);
-  }
-
-  if ( (s->map_start = mmap(0, s->fd_stat.st_size, PROT_READ | PROT_WRITE , MAP_SHARED, s->Currentfd, 0)) == MAP_FAILED ) {
-    perror("mmap failed");
-    exit(-4);
-  }
-  s->header = (Elf32_Ehdr *) s->map_start;
+  beforExam(s);
+  
   printf("ELF Header:\n");
   printf("  %-8s:%-3X%-3X%-3X%-3X\n" ,"Magic",s->header->e_ident[EI_MAG0], s->header->e_ident[EI_MAG1], s->header->e_ident[EI_MAG2], s->header->e_ident[EI_MAG3]);
   switch (s->header->e_ident[EI_DATA])
@@ -105,31 +88,12 @@ void exm_elf_file(state* s){
   printf("  %-35s%d bytes\n" , "Size of section headers:" , s->header->e_shentsize);
   printf("  %-35s%d bytes\n" , "Size of program headers:" , s->header->e_phentsize);
 
-  printf("Debug mode %d\n" , s->debug_mode);
   if(s->debug_mode == 1){
     printf("  %-35s%d bytes\n" , "Section header string table index:" , s->header->e_shstrndx);
   }
 
-  Elf32_Shdr * sheader = (Elf32_Shdr *)(s->map_start + s->header->e_shoff);
-
-  Elf32_Shdr * shstr_tab = (Elf32_Shdr *)(s->map_start + s->header->e_shoff) + s->header->e_shnum - 3;
-  Elf32_Off shstr_off = shstr_tab->sh_offset;
-
-  Elf32_Phdr * pheader = (Elf32_Phdr *)(s->header->e_phoff);
-
-  printf("\nSection Headers:\n");
-  printf("  %-7s%-20s%-13s%-9s%-8s%-8s\n", "[Nr]", "Name","Type","Addr","Off","Size");
-
-  for(int i = 0; i < s->header->e_shnum; i++){
-    char * sh_name = (s->map_start + shstr_off + sheader->sh_name);
-    printf("  [%2d%-4c%-20s%-13X%-9X%-8X%-8X\n",i ,']', sh_name, sheader->sh_type,sheader->sh_addr,
-    sheader->sh_offset,sheader->sh_size);
-    sheader += 1;
-  }
-  
-  
-  
-
+  printShtab(s);
+  afterExam(s);
 }
 
 
@@ -151,4 +115,57 @@ void quit(state* s){
     }
     free(s);
     exit(0);
+}
+
+void beforExam(state * s){
+  if(s->Currentfd != -1){
+    if( (close(s->Currentfd)) != 0 ) {
+      perror("error in close");
+      exit(-1);
+    }
+  }
+  if( (s->Currentfd = open(s->file_name, O_RDWR)) < 0 ) {
+    perror("error in open");
+    exit(-1);
+  }
+
+  if( fstat(s->Currentfd, &s->fd_stat) != 0 ) {
+    perror("stat failed");
+    exit(-1);
+  }
+
+  if ( (s->map_start = mmap(0, s->fd_stat.st_size, PROT_READ | PROT_WRITE , MAP_SHARED, s->Currentfd, 0)) == MAP_FAILED ) {
+    perror("mmap failed");
+    exit(-4);
+  }
+  s->header = (Elf32_Ehdr *) s->map_start;
+}
+void afterExam(state * s){
+  if(munmap(s->map_start, s->fd_stat.st_size) < 0){
+    perror("munmap failed");
+    exit(-4);
+  }
+
+  if( (s->Currentfd = close(s->Currentfd)) < 0 ) {
+    perror("error in close");
+    exit(-1);
+  }
+
+  s->Currentfd = -1;
+}
+void printShtab(state * s){
+  Elf32_Shdr * sheader = (Elf32_Shdr *)(s->map_start + s->header->e_shoff);
+
+  Elf32_Shdr * shstr_tab = (Elf32_Shdr *)(s->map_start + s->header->e_shoff) + s->header->e_shnum - 3;
+  Elf32_Off shstr_off = shstr_tab->sh_offset;
+
+  printf("\nSection Headers:\n");
+  printf("  %-7s%-20s%-13s%-9s%-8s%-8s\n", "[Nr]", "Name","Type","Addr","Off","Size");
+
+  for(int i = 0; i < s->header->e_shnum; i++){
+    char * sh_name = (s->map_start + shstr_off + sheader->sh_name);
+    printf("  [%2d%-4c%-20s%-13X%-9X%-8X%-8X\n",i ,']', sh_name, sheader->sh_type,sheader->sh_addr,
+    sheader->sh_offset,sheader->sh_size);
+    sheader += 1;
+  }
 }
